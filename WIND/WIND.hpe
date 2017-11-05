@@ -1,0 +1,295 @@
+%%HP: T(3)A(D)F(.);
+@==========================================================================
+@ NAME:            WIND
+@ LIBRARY#:        800
+@ DESCRIPTION:     Collection of functions and programs to solve the
+@                  wind triangle.
+@ Author:          Dan Pitic
+@ Version:         1.6
+@ Date:            26 March 2009
+@-------------------------------------------------------------------------
+@-------------------------------------------------------------------------
+@ CST menu
+{ HDG TAS TC GS WD WS CRAB 
+{ "AIR" ´ TC GS WD WS CAVE 'CRAB' STO 'TAS' STO 'HDG' STO ª } 
+{ "GND" ´ HDG TAS WD WS CGVE 'CRAB' STO 'GS' STO 'TC' STO ª } 
+{ "WIND" ´ HDG TAS TC GS CWVE 'CRAB' STO 'WS' STO 'WD' STO ª } 
+{ "THGS" ´ TAS TC WD WS THGS 'CRAB' STO 'GS' STO 'HDG' STO ª } 
+{ "GUI" ´ WNDTR ª } }
+MENU                       @ Create CST menu.
+@-------------------------------------------------------------------------
+@-------------------------------------------------------------------------
+´ @ NAME:          CAVE
+  @ DESCRIPTION:   Calculate AIR VECTOR from GROUND & WIND vectors.
+  @                Calculates the crab angle
+  @ INPUT:      tc     Track
+  @             gs     Ground speed
+  @             wd     Wind direction (from)
+  @             ws     Wind speed
+  @ OUTPUT:     hdg    Heading
+  @             tas    True air speed
+  @             crab   Crab angle
+  @
+  CYLIN                                 @ Set CYLINDRICAL coordinate mode
+  DEG                                   @ Set DEG mode.         
+  ç tc gs wd ws                         @ Inputs
+  ´  
+     gs tc çV2                          @ Create GROUND vector
+     ws wd çV2 NEG                      @ Create WIND vector
+     -                                  @ Calculate AIR vector (AV = GV - WV)
+     Vç                                 @ STO hdg and tas
+     ç tas hdg
+     ´  
+        IF hdg 0 <                         @ Normalise hdg if negative
+        THEN hdg 360 + 'hdg' STO
+        END 
+        hdg tc -                           @ Calculate crab angle
+        ç crab
+        ´  
+           CASE crab -90 <                    @ Make sure crab is NOT < -90 deg.
+                     THEN crab 360 + 'crab' STO END 
+                crab 90 >                     @ Make sure crab is NOT > 90 deg.
+                     THEN crab 360 - 'crab' STO END
+           END                                
+           hdg tas crab              @ Return hdg, tas and crab
+        ª
+     ª
+  ª
+ª                                    @ STACK hdg, tas, crab
+'CAVE' STO                           @ STO program as CAVE
+@------------------------------------------------------------------------
+@-------------------------------------------------------------------------
+´ @ NAME:           CGVE
+  @ DESCRIPTION:    Calculate GROUND VECTOR from WIND & AIR vectors.
+  @                 Calculate crab angle.
+  @ INPUT:      hdg     Heading
+  @             tas     True air speed 
+  @             wd      Wind direction (from)
+  @             ws      Wind speed
+  @ OUTPUT:     tc      Track
+  @             gs      Ground speed           
+  @             crab    Crab angle
+  @
+  CYLIN                                 @ Set CYLINDRICAL coordinate mode
+  DEG                                   @ Set DEG mode.            
+  ç hdg tas wd ws                       @ Inputs
+  ´  
+     ws wd çV2 NEG                      @ Create WIND vector
+     tas hdg çV2                        @ Create AIR vector
+     +                                  @ Calculate GROUND vector (GV = WV + AV)
+     Vç                                 @ STO tc and gs
+     ç gs tc
+     ´  
+        IF tc 0 <                       @ Normalise track if negative
+        THEN tc 360 + 'tc' STO 
+        END 
+        hdg tc -                        @ Calclate crab angle
+        ç crab
+        ´  
+           CASE crab -90 <              @ Make sure crab angle is NOT < -90 deg.
+                     THEN crab 360 + 'crab' STO END 
+                crab 90 >               @ Make sure crab angle is NOT > 90 deg.
+                     THEN crab 360 - 'crab' STO END
+           END                          
+           tc gs crab                   @ Return tc, gs and crab
+        ª
+      ª
+  ª
+ª                                    @ STACK tc, gs, crab
+'CGVE' STO                           @ STO program as CGVE
+@-------------------------------------------------------------------------
+@--------------------------------------------------------------------------
+´ @ NAME:         CWVE
+  @ DESCRIPTION:  Calculate WIND VECTOR from GROUND & AIR vectors.
+  @               Calculate CRAB angle.
+  @ INPUT:      hdg     Heading
+  @             tas     True air speed
+  @             tc      Track
+  @             gs      Ground speed        
+  @ OUTPUT:     wd      Wind direction
+  @             ws      Wind speed
+  @             crab    Crab angle
+  @
+  CYLIN                                 @ Set CYLINDRICAL coordinate mode
+  DEG                                   @ Set DEG mode.   
+  ç hdg tas tc gs                       @ Inputs
+  ´
+     gs tc çV2                          @ Create GROUND vector
+     tas hdg çV2                        @ Create AIR vector
+     -                                  @ Calculate WIND vector (WV = GV - AV)
+     Vç 180 +                           @ STO wd and ws
+     ç ws wd
+     ´  
+        hdg tc -                        @ Calculate crab angle
+        ç crab
+        ´  
+           CASE crab -90 <                    @ Make sure crab is NOT < -90 deg.
+                     THEN crab 360 + 'crab' STO END 
+                crab 90 >                     @ Make sure crab is NOT > 90 deg.
+                     THEN crab 360 - 'crab' STO END
+           END                                
+           wd ws crab                   @ Return wd, ws and crab
+        ª
+     ª
+  ª
+ª                                    @ STACK wd, ws, crab
+'CWVE' STO                           @ STO program as CWVE
+@-------------------------------------------------------------------------
+@-------------------------------------------------------------------------
+´ @ NAME:         THGS
+  @ DESCRIPTION:  Calculate TH and GS.
+  @ INPUT:       tas      True air speed (local)
+  @              tc       Track (local)
+  @              wd       Wind direction (local)
+  @              ws       Wind speed (local)
+  @ OUTPUT:      hdg      Heading
+  @              gs       Ground speed
+  @              crab     Crab angle
+  @ OTHER VAR:   wa       Wind angle (local)
+  @              wha      Wind heading angle (local)
+  @
+  CYLIN                                 @ Set CYLINDRICAL coordinate mode
+  DEG                                   @ Set DEG mode.  
+  ç tas tc wd ws                        @ Input 
+  ´  
+@-------------------------------------------------------------------------
+  @ NAME:         (CWAN)
+  @ DESCRIPTION:  Calculate WIND ANGLE (angle between WIND and GROUND vectors).
+  @ INPUT:      wd      Wind direction (local)
+  @             ws      Wind speed (local)
+  @             tc      Track (local)
+  @ OUTPUT:     STACK   Wind Angle
+  @    
+     ws wd çV2 NEG                           @ Create WIND vector
+     1 tc çV2                                @ Create UNIT GROUND vector
+     ç wv gv                                 @ STACK = EMPTY
+     ´
+        wv gv DOT wv ABS gv ABS * / ACOS     @ Calculate wind angle, wa
+     ª                                       @ STACK = wa
+@---------------------------------------------------------------------------
+@------------------------------------------------------------------------
+  @ NAME:           (CCRA)
+  @ DESCRIPTION:    Calculate CRAB angle.
+  @ INPUT:      ws    Wind speed
+  @             wa    Wind angle
+  @             tas   True air speed
+  @ OUTPUT:     crab  Crab angle
+  @
+     ç wa                                    @ STACK = EMPTY   
+     ´  
+        ws wa SIN * tas / ASIN               @ Calculate crab angle
+        ç crab                               @ STACK = EMPTY
+        ´  
+@------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+  @ NAME:          (CWHA)
+  @ DESCRIPTION:   Calculate WIND HEADING ANGLE (3rd angle in the triangle).
+  @ INPUT:      wa      Wind angle (local)
+  @             crab    Crab angle
+  @ OUTPUT:     wha     Wind heading angle (local)
+  @  
+           180 wa crab + -                 @ Calculate WIND HEADING ANGLE, wha
+           ç wha                           @ STACK = EMPTY  
+           ´                
+@-------------------------------------------------------------------------- 
+@------------------------------------------------------------------------  
+  @ NAME:           (CGS)
+  @ DESCRIPTION:    Calculate GS (scalar only)
+  @ INPUT:      wa      Wind angle (local)
+  @             tas     True air speed (local)
+  @             ws      Wind speed (local)
+  @             wha     Wind heading angle (local)
+  @ OUTPUT:     gs      Ground speed
+  @
+              CASE                         @ Calculate ground speed
+                   wa 0 ==                 @ Tail wind
+                     THEN tas ws + END     
+                   wa 180 ==               @ Head wind
+                     THEN tas ws - END 
+                   tas wha SIN * wa SIN /  @ Anything other than tail/head wind
+              END                          @ Return gs, STACK = Ground Speed.
+              ç gs                         @ STACK = EMPTY
+              ´
+                 tc gs wd ws CAVE          @ Calculate AIR vector for hdg & crab
+                 SWAP                      @ tas and crab
+                 DROP                      @ tas
+                 gs SWAP                   @ STACK = hdg gs crab
+              ª
+           ª
+        ª                                  
+     ª                                      
+  ª
+ª                         @ End of THGS
+'THGS' STO                @ STO program as THGS
+@--------------------------------------------------------------------------
+@--------------------------------------------------------------------------
+´ @ NAME:        WNDTR
+  @ DESCRIPTION: Creates the INPUT FORM for the variables and CHOOSE BOX
+  @              to select solution.
+  @ INPUT:      HDG      Heading (global)
+  @             TAS      True air speed (global)
+  @             TC       Track (global)
+  @             GS       Ground speed (global)
+  @             WD       Wind direction (global)
+  @             WS       Wind speed (global)
+  @             CRAB     Crab angle (global)
+  @ OUTPUT:     Same as INPUT variables, but with solutions.
+  @
+  WHILE
+     { HDG TAS TC GS WD WS CRAB } EVAL 7 çLIST        @ Extract initial 
+     ç initlst                                        @ values
+     ´
+       "WIND TRIANGLE"                                @ INPUT form
+       {
+       { "HDG:" "HEADING" 0 }
+       { "TAS:" "TRUE AIR SPEED" 0 }
+       { "TC:" "TRACK" 0 }
+       { "GS:" "GROUND SPEED" 0 }
+       { "WD:" "WIND DIRECTION (FROM)" 0 }
+       { "WS:" "WIND SPEED" 0 }
+       { "CRAB:" "CRAB ANGLE (OUTPUT ONLY)" 0 }
+       }
+       { 2 0 }
+       { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }    @ RESETS
+       initlst                                          @ INIT
+       INFORM 
+       DUP                                              
+       IF 1 ==                                          @ Output variables.
+       THEN SWAP { HDG TAS TC GS WD WS CRAB } STO 
+       ELSE CST MENU                                    @ Display CST menu
+       END 
+     ª
+  REPEAT 
+       "SOLVE MENU"                @ CHOOSE box for solution menu
+       {
+       { "HDG & GS" ´ TAS TC WD WS THGS 'CRAB' STO 'GS' STO 'HDG' STO ª }    
+       { "TRACK & GS" ´ HDG TAS WD WS CGVE 'CRAB' STO 'GS' STO 'TC' STO ª } 
+       { "HDG & TAS" ´ TC GS WD WS CAVE 'CRAB' STO 'TAS' STO 'HDG' STO ª }    
+       { "WIND" ´ HDG TAS TC GS CWVE 'CRAB' STO 'WS' STO 'WD' STO ª }       
+       }
+       1
+       CHOOSE 
+       IF 1 == THEN EVAL END       @ Execute applicable program
+  END
+ª
+'WNDTR' STO                        @ STO program as WNDTR
+@---------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+800 '$ROMID' STO
+
+"WIND : Wind Triangle" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g.
+´ 800 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ CAVE CGVE CWVE THGS WNDTR } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for the HP50g.
+{ HDG TAS TC GS WD WS CRAB CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Not required for the HP50g (delete '$VARS')
+{ HDG TAS TC GS WD WS CRAB CST } '$VARS' STO
+@---------------------------------------------------------------------------

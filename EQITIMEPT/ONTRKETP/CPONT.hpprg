@@ -1,0 +1,144 @@
+%%HP: T(3)A(D)F(.);
+@=============================================================================
+@ NAME:          CPONT
+@ LIBRARY #:     809
+@ DESCRIPTION:   Calculates the ON TRACK eqi-time point distance from departure
+@                point.  Calculates the flight time from the ETP to either
+@                point.  Calculates the fuel burn off from the ETP to either 
+@                point.
+@ Author:        Dan Pitic
+@ Version:       1.0
+@ Date:          04 April 2009
+@ Arguments:     WIND (Library #: 800)
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+@ CST menu
+{ TAS TC WD WS DIST FFLO                             @ Input variables
+{ "SOLVE" ´ TAS TC WD WS DIST FFLO CETP              @ Solve problem
+            'FBRN' STO 'CPTIM' STO 'CPDIS' STO  ª }  @ STO solution
+  CPDIS CPTIM FBRN { }                               @ Solution variables
+{ "GUI" ´ GUIONTETP ª } }                            @ GUI
+MENU
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ Name:            CETP
+  @ Description:     Calculates the equi-time point distance from departure
+  @                  point.  Calculates the flight time from the ETP to either
+  @                  point.  Calculates the fuel burn off from the ETP to
+  @                  either point.
+  @ Input:     tas     True air speed
+  @            tc1     Track out from departure to destination
+  @            wd      Wind direction (from)
+  @            ws      Wind speed
+  @            dist    Distance from departure to desination
+  @            fflo    Fuel flow (from ETP)
+  @ Output:    STACK   Equi-time point distance from departure
+  @            STACK   Time from ETP to either aerodrome (hrs)
+  @            STACK   Fuel burn off from ETP to either aerodrome
+  @  
+  ç tas tc1 wd ws dist fflo                      @ Inputs
+  ´  
+     tas tc1 wd ws THGS DROP                     @ Solve OUTBOUND wind triangle
+     ç hdg1 gs1                                  @ hdg1 = heading outbound
+     ´                                           @ gs1 = ground speed out.
+        tc1 180 +                                @ tc2 = reciprocal track
+        ç tc2
+        ´
+          IF tc2 360 >                           @ Make sure tc2 NOT > 360 deg
+             THEN tc2 360 - 'tc2' STO
+          END
+          tas tc2 wd ws THGS DROP                @ Solve INBOUND wind triangle
+          ç hdg2 gs2                             @ hdg2 = heading inbound
+          ´                                      @ gs2 = ground speed in
+             'dist*gs2/(gs1 + gs2)' çNUM         @ Calc. dist. to ETP from
+             DUP                                 @ departure point.
+             gs2 /                               @ Calc. time from ETP (hrs)
+             DUP                                 @ to either aerodrome.
+             fflo *                              @ Calc. fuel burn from ETP
+          ª                 @ STACK output: 
+        ª                   @ ETP distance from departure point
+     ª                      @ Time from ETP to either point (hrs)
+  ª                         @ Fuel burn off from ETP to either point.
+ª
+'CETP' STO
+@------------------------------------------------------------------------------
+@------------------------------------------------------------------------------
+´ @ Name:            GUIONTETP
+  @ Description:     Input/output form for the ETP problem
+  @ Input:      TAS      True air speed.
+  @             TC       Track outbound from departure.
+  @             WD       Wind direction (from)
+  @             WS       Wind speed.
+  @             DIST     Distance from departure to destination.
+  @             FFLO     Fuel flow from ETP
+  @ Output:     CPDIS    Distance to ETP from departure point
+  @             CPTIM    Time from ETP to either aerodrome
+  @             FBRN     
+  @
+  WHILE
+       { TAS TC WD WS DIST FFLO }                       @ Initial input vars.
+       EVAL 6 çLIST
+       ç initlst1                                       @ Initial values
+       ´  
+          "EQUI-TIME POINT - INPUT"                     @ Input form
+          {
+          { "TAS:" "TRUE AIR SPEED" 0 }
+          { "TC:" "TRACK OUTBOUND FROM DEPARTURE" 0 }
+          { "WD:" "WIND DIRECTION (FROM)" 0 }
+          { "WS:" "WIND SPEED" 0 }
+          { "DIST:" "DISTANCE FROM DEP. TO DEST." 0 }
+          { "FFLO:" "FUEL FLOW FROM ETP" 0 }
+          }
+          { 2 0 }
+          { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }       @ Resets
+          initlst1                                      @ Initial values
+          INFORM                                        @ Create form for input
+          DUP
+          IF 1 ==                                       @ STO input values in
+             THEN SWAP { TAS TC WD WS DIST FFLO } STO   @ global vars. for 
+             ELSE CST MENU                              @ ELSE exit from menu
+          END
+       ª
+  REPEAT
+        TAS TC WD WS DIST FFLO CETP                     @ Calc. ETP
+        3 çLIST DUP                                     @ Create list for form
+        { CPDIS CPTIM FBRN } STO                        @ STO solutions in
+        ç initlst2                                      @ global vars.
+        ´  
+           "EQUI-TIME POINT - OUTPUT"                   @ For for output
+           {
+           { "DIST:" "DISTANCE TO ETP FROM DEP. POINT" 0 }
+           { "TIME:" "TIME FROM ETP TO EITHER POINT" 0 }
+           { "BURN:" "FUEL BURN FROM ETP TO EITHER POINT" 0 }
+           }
+           { 1 0 }
+           { NOVAL NOVAL NOVAL }                        @ Resets
+           initlst2                                     @ Solution list
+           INFORM                                       @ Create form
+           IF 1 ==                                      @ Clear list from stack
+              THEN DROP 
+           END
+        ª
+  END
+ª
+'GUIONTETP' STO
+@------------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+809 '$ROMID' STO
+
+"CPONT : On track ETP" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g.
+´ 809 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ CETP GUIONTETP } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for the HP50g.
+{ $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Not required for the HP50g (delete '$VARS')
+{ TAS TC WD WS DIST FFLO CPDIS CPTIM FBRN CST } '$VARS' STO
+@---------------------------------------------------------------------------

@@ -1,0 +1,221 @@
+%%HP: T(3)A(D)F(.);
+@==========================================================================
+@ NAME:            PNRVF
+@ LIBRARY #:       802
+@ DESCRIPTION:     Collection of functions and programs to solve the
+@                  point of no return (PNR) from fixed base (along
+@                  track) for variable fuel flow.
+@ Author:          Dan Pitic
+@ Version:         1.2
+@ Date:            26 March 2009
+@ Arguments:       WIND
+@-------------------------------------------------------------------------
+@--------------------------------------------------------------------------
+@ CST menu
+{ WD1 WS1 TC1 FF1 TAS1 DHOM WD2 WS2 FF2 TAS2 FLTFL 
+{ "SOLVE" ´ WD1 WS1 TC1 FF1 TAS1 DHOM WD2 WS2 FF2 TAS2 FLTFL PNRVF 
+'SGR2' STO 'S2' STO 'HDG2' STO 'SGR1' STO 'S1' STO 'HDG1' STO 'T1' STO
+'DFMH' STO 'R' STO ª } R DFMH T1 HDG1 S1 SGR1 HDG2 S2 SGR2 { "GUI" ´ PNRFRM ª } }
+MENU
+@---------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+´ @ NAME:            PNRVF
+  @ DESCRIPTION:     Calculation of point of no return (along track) from
+  @                  FIXED base for variable fuel flow.
+  @ INPUT:      wd1       Wind direction OUTBOUND (from)
+  @             ws1       Wind speed OUTBOUND
+  @             tc1       Track OUTBOUND
+  @             ff1       Fuel flow OUTBOUND
+  @             tas1      True air speed OUTBOUND
+  @             dhom      Distance from FIX back to HOME base
+  @             wd2       Wind direction INBOUND (from)
+  @             ws2       Wind speed INBOUND (from)
+  @             ff2       Fuel flow INBOUND
+  @             fltfl     Safe fuel (quantity)
+  @ OUTPUT:     r         Point of no return FROM FIX
+  @             dfmh      Point of no return FROM HOME
+  @             t1        Time to turn (time to PNR)
+  @             hdg1      Heading OUTBOUND
+  @             s1        Ground speed OUTBOUND
+  @             sgr1      Specific ground range OUTBOUND
+  @             hdg2      Heading INBOUND
+  @             s2        Ground speed INBOUND
+  @             sgr2      Specific ground range INBOUND         
+  @
+  ç wd1 ws1 tc1 ff1 tas1 dhom wd2 ws2 ff2 tas2 fltfl            @ INPUTS
+  ´  
+     tas1 tc1 wd1 ws1 THGS                @ Calc. wind triangle 1 (OUTBOUND)
+     DROP                                 @ Crab angle
+     ç hdg1 s1                            @ hdg1 = HDG OUTBOUND, s1 = GS OUT
+     ´  
+        tc1 180 +                         @ Calc. track BACK (INBOUND)
+        ç tc2                             @ tc2 = track BACK
+        ´  
+           IF tc2 360 >                   @ Make sure tc2 is NOT > 360 deg.
+           THEN tc2 360 - 'tc2' STO
+           END
+           tas2 tc2 wd2 ws2 THGS          @ Calc. wind triangle 2 (INBOUND)
+           DROP                           @ Crab angle
+           ç hdg2 s2                      @ hdg2 = HDG INBOUND, s2 = GS IN
+           ´  
+              ff1 s1 /                    @ Calc. SGR1
+              ff2 s2 /                    @ Calc. SGR2
+              ç sgr1 sgr2
+              ´                           @ Calc. PNR from FIX
+                 '(fltfl - dhom*sgr2)/(sgr1 + sgr2)' çNUM
+                 ç r                      @ PNR from FIX
+                 ´  
+                    dhom r +              @ PNR from HOME base
+                    ç dfmh                @ PNR distance from HOME base
+                    ´  
+                       r s1 /             @ Time to turn (time to PNR) from FIX
+                       ç t1 
+                       ´                  @ OUTPUTS
+                          r dfmh t1 hdg1 s1 sgr1 hdg2 s2 sgr2
+                       ª
+                    ª
+                 ª
+              ª
+           ª
+        ª
+     ª
+  ª  
+ª
+'PNRVF' STO
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            PNRFRM
+  @ DESCRIPTION:     Creates the input form for the PNR problem.
+  @ INPUT:      WD   Wind direction (from)
+  @             WS   Wind speed
+  @             TC1  Track OUTBOUND
+  @             T    Safe endurance (hrs)
+  @             TAS  True air speed
+  @             DHOM Distance from FIX back to HOME
+  @ OUTPUT:     T1   Time to turn (from FIX)
+  @             R    Radius of action (from FIX)
+  @             DFMH Radius of action (from HOME base)
+  @             HDG1 Heading OUTBOUND
+  @             S1   Ground speed OUTBOUND
+  @             HDG2 Heading INBOUND
+  @             S2   Ground speed INBOUND
+  @ 
+  WHILE 
+        { WD1 WS1 TC1 FF1 TAS1 DHOM }       @ Input list of variables OUTBOUND
+        EVAL 6 çLIST                        @ Initial values
+        ç initlst1
+        ´  
+           "PNR: INPUT 1/2 - OUTBOUND"
+           {
+           { "WD1:" "WIND DIRECTION (FROM)" 0 }
+           { "WS1:" "WIND SPEED" 0 }
+           { "TC1:" "TRACK OUTBOUND" 0 }
+           { "FF1:" "FUEL FLOW OUTBOUND" 0 }
+           { "TAS1:" "TRUE AIR SPEED OUTBOUND" 0 }
+           { "DHOM:" "DISTANCE FROM FIX BACK TO HOME" 0 }
+           }
+           { 2 0 }
+           { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+           initlst1
+           INFORM
+           DUP
+           IF 1 ==
+           THEN SWAP { WD1 WS1 TC1 FF1 TAS1 DHOM } STO
+           ELSE CST MENU
+           END
+        ª
+  REPEAT
+        WHILE
+             { WD2 WS2 FF2 TAS2 FLTFL }      @ Input list of variables INBOUND
+             EVAL 5 çLIST                    @ Initial values
+             ç initlst2
+             ´  
+                "PNR: INPUT 2/2 - INBOUND"
+                {
+                { "WD2:" "WIND DIRECTION (FROM)" 0 }
+                { "WS2:" "WIND SPEED" 0 }
+                { "FF2:" "FUEL FLOW INBOUND" 0 }
+                { "TAS2:" "TRUE AIR SPEED INBOUND" 0 }
+                { "FLTFL:" "SAFE FUEL (QUANTITY)" 0 }
+                }
+                { 2 0 }
+                { NOVAL NOVAL NOVAL NOVAL NOVAL }
+                initlst2
+                INFORM
+                DUP
+                IF 1 ==
+                THEN SWAP { WD2 WS2 FF2 TAS2 FLTFL } STO
+                ELSE CST MENU
+                END
+             ª
+        REPEAT  
+                WD1 WS1 TC1 FF1 TAS1 DHOM WD2 WS2 FF2 TAS2 FLTFL PNRVF
+                9 çLIST
+                { R DFMH T1 HDG1 S1 SGR1 HDG2 S2 SGR2 } STO
+                WHILE
+                     R DFMH T1 HDG1 S1 SGR1 6 çLIST
+                     ç initlst3
+                     ´  
+                        "PNR: OUTPUT 1/2 - OUTBOUND"
+                        {
+                        { "R:" "POINT OF NO RETURN (FROM FIX)" 0 }
+                        { "DFMH:" "RADIUS OF ACTION FROM HOME" 0 }
+                        { "T1:" "TIME TO TURN (AT PNR)" 0 }
+                        { }
+                        { "HDG1:" "HEADING OUTBOUND" 0 }
+                        { "S1:" "GROUND SPEED OUTBOUND" 0 }
+                        { "SGR1:" "SPEC. GND. RANGE (OUT)" 0 }
+                        { }
+                        }
+                        { 2 0 }
+                        { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+                        initlst3
+                        INFORM
+                        DUP
+                        IF 1 ==
+                        THEN SWAP DROP END
+                     ª
+                REPEAT
+                      HDG2 S2 SGR2 3 çLIST
+                      ç initlst4
+                      ´  
+                         "PNR: OUTPUT 2/2 - INBOUND"
+                         {
+                         { "HDG2:" "HEADING INBOUND" 0 }
+                         { "S2:" "GROUND SPEED INBOUND" 0 }
+                         { "SGR2:" "SPEC. GND. RANGE (INBOUND)" 0 }
+                         }
+                         { 1 0 }
+                         { NOVAL NOVAL NOVAL }
+                         initlst4
+                         INFORM
+                         IF 1 ==
+                         THEN DROP END
+                      ª
+                END
+        END 
+  END
+ª
+'PNRFRM' STO
+@-------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+802 '$ROMID' STO
+
+"PNRVF : Point of no return, variable fuel flow" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g
+´ 802 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ PNRVF PNRFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$CONFIG' for HP50g
+{ WD1 WS1 TC1 FF1 TAS1 DHOM WD2 WS2 FF2 TAS2 FLTFL R DFMH T1 HDG1 S1 SGR1
+ HDG2 S2 SGR2 CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Delete '$VARS' for HP50g
+{ WD1 WS1 TC1 FF1 TAS1 DHOM WD2 WS2 FF2 TAS2 FLTFL R DFMH T1 HDG1 S1 SGR1
+ HDG2 S2 SGR2 CST } '$VARS' STO
+@---------------------------------------------------------------------------

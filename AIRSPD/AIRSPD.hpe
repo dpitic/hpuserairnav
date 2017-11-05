@@ -1,0 +1,215 @@
+%%HP: T(3)A(D)F(.);
+@=============================================================================
+@ Name:            ASPD
+@ Library #:       808
+@ Description:     Calculates mach number and true air speed from inputs of 
+@                  calibrated air speed and pressure altitude and either 
+@                  total air temperature or static air temperature.
+@ Author:          Dan Pitic
+@ Version:         1.3
+@ Date:            03 April 2009
+@ Arguments:       ISATM
+@------------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            NWASPD
+  @ DESCRIPTION:     Modifies CST menu for start of a new problem.
+  @ INPUT:      NONE
+  @ OUTPUT:     CST      Menu reorganised to start new problem or view
+  @                      solutions from previous problem
+  @
+  { { "CAS" ´ '1_knot' çUNIT DUP                        @ Input CAS & add units
+              'VC' STO "CAS" çTAG ª }                   @ TAG CAS
+    { "PALT" ´ '1_ft' çUNIT DUP                         @ Input press. alt.
+               'PA' STO "PALT" çTAG                     @ TAG PALT
+               VC PA CMACH "MACH" çTAG ª }              @ Calt. Mach and TAG  
+    { "MACH" ´ DUP 'M' STO "MACH" çTAG                  @ Input Mach & TAG
+               { { } { } M                              @ New CST menu
+                 { "TAT" ´ '1_∞C' çUNIT DUP 'T2' STO "TAT" çTAG  @ Input TAT
+                           M T2 CSAT DUP 'T1' STO "SAT" çTAG     @ Solve for SAT
+                           M T1 TASMS DUP 'V1' STO "TAS" çTAG    @ Solve for TAS
+                           { { "NEW" ´ NWASPD ª } { } M T2 T1 V1 } MENU ª } 
+                 { "SAT" ´ '1_∞C' çUNIT DUP 'T1' STO "SAT" çTAG  @ Input SAT
+                           M T1 CTAT DUP 'T2' STO "TAT" çTAG     @ Solve for TAT
+                           M T1 TASMS DUP 'V1' STO "TAS" çTAG    @ Solve for TAS
+                           { { "NEW" ´ NWASPD ª } { } M T2 T1 V1 } MENU ª }
+                 { "NEW" ´ NWASPD ª } } MENU ª }           @ Start new problem
+    { } 
+    { "GUI" ´ ASPDFRM ª }                               @ Start the GUI
+    { "ANSER" ´ { VC PA M T2 T1 V1 { "NEW" ´ NWASPD ª } } MENU ª } 
+  } 
+  MENU                                    @ Initial CST menu for the
+ª                                         @ start of a new problem.
+'NWASPD' STO                              @
+NWASPD                                    @ Display CST menu
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:         CMACH
+  @ DESCRIPTION:  Calculates Mach number from PA press. alt. and calibrated
+  @               calibrated air speed, VC.
+  @ INPUT:        vc     Calibrated air speed (knots)
+  @               STACK  Pressure Altitude, PA
+  @ OUTPUT:       STACK  Mach number
+  @               M      Mach number (global)
+  @               CST    MENU updated for next step of solution.
+  @ Other VAR:    P1     ISA press. at pressure altitude PA
+  @               P0     ISA press. at sea level
+  @               ó0     ISA density at sea level
+  @
+  ISAP                                       @ P1 = ISA press. at PA     
+  0_m ISAP                                   @ P0 = ISA press. at sea level
+  0_m ISAó                                   @ ó0 = ISA density at sea level
+  1.4                                        @ k = 1.4 for standard atmos.
+  ç vc p1 p0 ó0 k
+  ´
+    'vc^2=2*k/(k-1)*(p0/ó0)*((1+p1/p0*((1+(k-1)/2*M^2)^(k/(k-1))-1))^((k-1)/k)-1)' 
+    'M' .5 ROOT                              @ Solve for mach number M (global)
+  ª
+  { VC PA M                               @ VC, PA and M available as outputs.
+  { "TAT" ´ '1_∞C' çUNIT DUP 'T2' STO "TAT" çTAG       @ Input TAT
+            M T2 CSAT DUP 'T1' STO "SAT" çTAG          @ Solve for SAT
+            M T1 TASMS DUP 'V1' STO "TAS" çTAG         @ Solve for TAS
+            { VC PA M T2 T1 V1 { "NEW" ´ NWASPD ª } } MENU ª }
+  { "SAT" ´ '1_∞C' çUNIT DUP 'T1' STO "SAT" çTAG       @ Input SAT
+            M T1 CTAT DUP 'T2' STO "TAT" çTAG          @ Solve for TAT
+            M T1 TASMS DUP 'V1' STO "TAS" çTAG         @ Solve for TAS
+            { VC PA M T2 T1 V1 { "NEW" ´ NWASPD ª } } MENU ª } 
+  { "NEW" ´ NEW ª } }                                  @ Start new problem.
+                                @ Solution of M and input VC and PA available.
+  MENU                          @ Reorganise MENU for next step
+ª                               @ of the problem.  Either input TAT or SAT
+'CMACH' STO                     @ or start new problem.
+@----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            CSAT
+  @ DESCRIPTION:     Calculates STATIC air temp. from TOTAL air temp. and
+  @                  Mach number.
+  @ INPUT:      STACK     m         Mach number
+  @             STACK     t2        TOTAL air temp. (deg. C).
+  @ OUTPUT:     STACK     T1        STATIC air temp. (deg. C) (global)
+  @ 
+  '1_K' CONVERT              @ Convert T2 = TOTAL air temp. to Kelvin
+  1.4
+  ç m t2 k                   @ k = 1.4 for std. atmos.
+  ´
+     't2/(1+((k-1)/2)*m^2)'     @ Calculate T1 = STATIC air temp. from
+     çNUM                       @ Mach no. and T2 TOTAL air temp.
+     UBASE
+  ª
+  '1_∞C' CONVERT                @ Convert STATIC air temp to deg. C.
+ª                               @ STACK = Static air temp. (deg. C).
+'CSAT' STO                      @
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:           CTAT
+  @ DESCRIPTION:    Calculates TOTAL air temp. from Mach number and 
+  @                 STATIC air temp.
+  @ INPUT:   STACK  m      Mach number
+  @          STACK  t1     STATIC air temp. at press. alt. PA
+  @ OUTPUT:  STACK  T2     TOTAL air temp. (deg. C) (global)
+  @
+  '1_K' CONVERT        @ Convert T1 STATIC air temp. to Kelvin for calculation.
+  1.4
+  ç m t1 k             @ k = 1.4 for std. atm. (ratio of specific heats)
+  ´
+    't1*(1+((k-1)/2)*m^2)'      @ Calc. TOTAL air temp. from Mach number
+    çNUM                        @ and STATIC air temp.
+    UBASE
+  ª
+  '1_∞C' CONVERT                @ Convert to deg. C & sto as T2 (global).
+ª                               @ STACK = Total air temp. (deg. C)
+'CTAT' STO                      @
+@-----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:           TASMS
+  @ DESCRIPTION:    Calculates the true air speed from Mach number and 
+  @                 STATIC air temp. (obtained from TOTAL air temp.).
+  @ INPUT:     STACK       m    Mach number
+  @            STACK       t1   STATIC air temp.
+  @ OUTPUT:    STACK       V1   True air speed in knots (global)
+  @
+  '1_K' CONVERT               @ Convert T1 to Kelvin
+  1.4
+  287.0528_J/(kg*K)
+  ç m t1 k R
+  ´
+    'm * É(k*R*t1)'           @ Calculate TAS from Mach no. and
+    çNUM                      @ T1 STATIC air temp.
+  ª
+  '1_knot' CONVERT            @ Convert to knots
+ª                             @ STACK = True air speed.
+'TASMS' STO                   @
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ Name:            ASPDFRM
+  @ Description:     Input form for airspeed calculations.
+  @ Input:      VC      Calibrated airspeed
+  @             PA      Pressure altitude
+  @ In/output:  M       Mach number
+  @             T2      Total air temp.
+  @             T1      Static air temp.
+  @             V1      True air speed.
+  @
+  WHILE
+       { VC PA M T2 T1 V1 } EVAL 6 çLIST        @ Global variables (Inputs)
+       ç initlst                                @ Initial values.
+       ´  
+          "AIRSPEED"
+          {
+          { "VC:" "CALIBRATED AIR SPEED" 13 }
+          { }
+          { "PA:" "PRESSURE ALTITUDE" 13 }
+          { "M:" "MACH NUMBER" 0 }
+          { "T2:" "TOTAL AIR TEMP. (INDICATED)" 13 }
+          { "T1:" "STATIC AIR TEMPERATURE (TRUE)" 13 }
+          { "V1:" "TRUE AIR SPEED" 13 }
+          { }
+          }
+          { 2 0 }
+          { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+          initlst
+          INFORM
+          DUP
+          IF 1 ==
+          THEN SWAP { VC PA M T2 T1 V1 } STO
+          ELSE { VC PA M T2 T1 V1 { "NEW" ´ NWASPD ª } } MENU
+          END
+       ª
+  REPEAT
+        IF VC NOVAL ã PA NOVAL ã AND            @ Check to see if VC & PA exist.
+           THEN VC PA CMACH DROP                @ Calculate Mach number
+                IF T2 NOVAL ã                   @ Check if TOTAL air temp.
+                   THEN M T2 CSAT 'T1' STO      @ Calc. STATIC air temp.
+                        M T1 TASMS 'V1' STO     @ Calc. TAS.
+                   ELSE M T1 CTAT 'T2' STO      @ Otherwise use STATIC air temp.
+                        M T1 TASMS 'V1' STO     @ Calc. TAS
+                END                             @ Use input Mach number
+           ELSE IF T2 NOVAL ã                   @ Check for TOTAL air temp.
+                   THEN M T2 CSAT 'T1' STO      @ Calc. STATIC air temp.
+                        M T1 TASMS 'V1' STO     @ Calc. TAS
+                   ELSE M T1 CTAT 'T2' STO      @ Otherwise use TOTAL air temp.
+                        M T1 TASMS 'V1' STO     @ Calc. TAS.
+                END
+        END
+  END
+ª
+'ASPDFRM' STO
+@-----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+808 '$ROMID' STO
+
+"ASPD : Airspeed" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g.
+´ 808 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ ASPDFRM } '$VISIBLE' STO
+
+@ For HP48gx library.  Delete 'CST', '$CONFIG' and global vars. for the HP50g.
+{ VC PA M T2 T1 V1 NWASPD CMACH CSAT CTAT TASMS CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Not required for the HP50g (delete '$VARS')
+{ VC PA M T2 T1 V1 CST } '$VARS' STO
+@---------------------------------------------------------------------------

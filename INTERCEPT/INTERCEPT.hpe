@@ -1,0 +1,139 @@
+%%HP: T(3)A(D)F(.);
+@==========================================================================
+@ NAME:            INTERCEPT
+@ LIBRARY #:       801
+@ DESCRIPTION:     Collection of functions and programs to solve 
+@                  interception problems.
+@ Author:          Dan Pitic
+@ Version:         1.6
+@ Date:            26 March 2009
+@ Arguments:       WIND
+@-------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+@ CST menu
+{ WD WS TAS DRM2 MRM2 TRS GSS 
+  { "SOLVE" ´ WD WS TAS DRM2 MRM2 TRS GSS INTER 
+              'ETI' STO 'GS' STO 'TC' STO 'HDG' STO ª } 
+  HDG TC GS ETI { "GUI" ´ INFRM ª } 
+}
+MENU
+@-----------------------------------------------------------------------------
+@-------------------------------------------------------------------------
+´ @ NAME:            INTER
+  @ DESCRIPTION:     Solves the interception problem.
+  @ INPUT:      wd      Wind direction (from)
+  @             ws      Wind speed
+  @             tas     True air speed of interceptor
+  @             drm2    Direction of relative motion (bearing to target)
+  @             mrm2    Distance to target
+  @             trs     Track of target
+  @             gss     Ground speed of target
+  @ OUTPUT:     STACK
+  @             hdg     Heading to intercept
+  @             tc      Track to intercept
+  @             gs      Ground speed to intercept
+  @             eti     Time to intercept
+  @
+  CYLIN                                 @ Set CYLINDRICAL coordinate mode
+  DEG                                   @ Set DEG mode.       
+  ç wd ws tas drm2 mrm2 trs gss     @ Inputs
+  ´
+     ws wd çV2                      @ Create -WIND vector
+     gss trs çV2                    @ Create TARGET GROUND vector
+     +                              @ Calculate -RELATIVE wind vector
+     Vç                             @ rws, rwd (from)
+     ç rws rwd                      @ RELATIVE wind speed and direction (from)
+     ´  
+        IF rwd 0 <                  @ Make sure rwd is NOT < 0
+           THEN rwd 360 + 'rwd' STO 
+        END
+        tas drm2 rwd rws THGS       @ Calculate hdg and gs (=S2 = SRM)
+        DROP                        @ Crab angle
+        mrm2 SWAP /                 @ Calculate ETI (time to intercept)
+        SWAP
+        DUP                         @ DUP hdg for input to calc. ground vector.
+        tas wd ws CGVE              @ Calculate tc and gs to intercept
+        DROP                        @ Crab angle
+        4 ROLL                      @ STACK OUTPUT = hdg, tc, gs, eti
+     ª                              
+  ª                             
+ª                                   @ STACK = hdg, tc, gs, eti
+'INTER' STO                         @ STO program in INTER
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            INFRM
+  @ DESCRIPTION:     Creates the graphical input and output displays
+  @                  for the interception problem and solves the interception.
+  @ INPUT:      Idential to INTER
+  @ OUTPUT:     Identical to INTER
+  @          
+  WHILE
+       { WD WS TAS DRM2 MRM2 TRS GSS }            @ Input list of variables.
+       EVAL 7 çLIST                               @ Initial values.
+       ç initlst
+       ´  
+          "INTERCEPTION - INPUT"                  @ Create input form
+          {
+          { "WD:" "WIND DIRECTION (FROM)" 0 }
+          { "WS:" "WIND SPEED" 0 }
+          { "TAS:" "TRUE AIR SPEED OF INTERCEPTOR" 0 }
+          { }
+          { "DRM2" "BEARING TO TARGET" 0 }
+          { "MRM2:" "DISTANCE TO TARGET" 0 }
+          { "TRS:" "TRACK OF TARGET" 0 }
+          { "GSS:" "GROUND SPEED OF TARGET" 0 }
+          }
+          { 2 0 }
+          { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }     @ Resets
+          initlst                                           @ Initial values
+          INFORM
+          DUP
+          IF 1 ==                                           @ Solve problem
+          THEN SWAP { WD WS TAS DRM2 MRM2 TRS GSS } STO
+          ELSE                                              @ Display CST menu.
+          CST MENU                                          @ Exit form
+          END
+        ª
+  REPEAT
+       WD WS TAS DRM2 MRM2 TRS GSS INTER                @ Solve Interception
+       4 çLIST DUP
+       ç initlst
+       ´  
+          { HDG TC GS ETI } STO                         @ Solution variables
+          "INTERCEPTION - OUTPUT"                       @ Create OUTPUT form
+          {
+          { "HDG:" "HEADING TO INTERCEPT" 0 }
+          { "TC:" "TRACK TO INTERCEPT" 0 }
+          { "GS:" "GROUND SPEED TO INTERCEPT" 0 }
+          { "ETI:" "TIME TO INTERCEPT (HRS)" 0 }
+          }
+          { 1 0 }
+          { NOVAL NOVAL NOVAL NOVAL }                    @ Resets
+          initlst                                        @ Initial values
+          INFORM
+          IF 1 ==                                        @ CLEAR stack
+          THEN DROP END
+       ª  
+  END
+ª                                         @ STACK = Empty
+'INFRM' STO                               @ Store in INFRM
+@-----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+801 '$ROMID' STO
+
+"INTERCEPT : Interception" '$TITLE' STO
+
+@ For HP48gx library ONLY.  Set '$CONFIG' = 1. for HP50g library.
+´ 801 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ INTER INFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for HP50g
+{ WD WS TAS DRM2 MRM2 TRS GSS HDG TC GS ETI CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Delete '$VARS' for HP 50g
+{ WD WS TAS DRM2 MRM2 TRS GSS HDG TC GS ETI CST } '$VARS' STO
+@---------------------------------------------------------------------------

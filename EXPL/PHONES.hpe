@@ -1,0 +1,82 @@
+%%HP: T(3)A(D)F(.);
+@ Argumentos:
+@ Author:
+@ E-mail:
+@ Version:
+@ Created using HPUserEdit 5 [http://www.gaak.org/hpuser]
+
+´
+'NAMES' VTYPE
+  IF -1 ==
+  THEN { } 'NAMES' STO
+  END
+ WHILE
+@ "PHONELIST OPTIONS:"
+@ {
+@ { "ADD A NAME" 1 }
+@ { "VIEW A NUMBER" 2 }
+@   } 1 CHOOSE
+   
+"PHONELIST OPTIONS"
+{
+{ "ADD A NAME" 1 }
+{ "VIEW A NUMBER" 2 }
+}
+1
+CHOOSE 
+   
+ REPEAT ç c 
+´
+CASE c 1 ==
+     THEN
+         WHILE
+@         "ADD A NAME"
+@          {
+@          { "NAME:" "ENTER NAME" 2 }
+@          { "PHONE:" "ENTER A PHONE NUMBER" 2 } }
+@          { } { } { } INFORM
+
+         
+"ADD A NAME"
+{
+{ "NAME:" "ENTER A NAME" 2 }
+{ "PHONE:" "ENTER A PHONE NUMBER" 2 }
+}
+{ 1 0 }
+{ }
+{ }
+INFORM
+  
+
+         REPEAT
+         DUP
+            IF { NOVAL } HEAD POS
+            THEN
+                DROP
+                "Complete both fields before pressing OK"
+                MSGBOX
+            ELSE 1
+                 çLIST NAMES + SORT
+                 'NAMES' STO
+            END
+          END
+     END
+     c 2 ==
+     THEN
+         IF { } NAMES SAME
+            THEN
+                "YOU MUST ADD A NAME FIRST"
+                MSGBOX
+            ELSE
+                WHILE
+                     "VIEW A NUMBER" NAMES 1 CHOOSE
+                REPEAT
+                      çSTR MSGBOX
+                END
+            END
+          END
+      END
+ª
+END
+ª
+'PHONES' STO

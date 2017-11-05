@@ -1,0 +1,163 @@
+%%HP: T(3)A(D)F(.);
+@============================================================================
+@ Name:          ROASAMBA
+@ LIBRARY #:     803
+@ Description:   Calculates the Radius of Action from a fixed base, returning
+@                to the SAME base on a reciprocal course.
+@ Author:        Dan Pitic
+@ Version:       1.3
+@ Date:          26 March 2009
+@ Arguments:     WIND
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+@ CST menu
+{ WD WS TC1 T TAS DHOM { "SOLVE" ´ WD WS TC1 T TAS DHOM ROASAMBA
+ 'S2' STO 'HDG2' STO 'S1' STO 'HDG1' STO 'DFMH' STO 'R' STO 'T1' STO ª } 
+ T1 R DFMH HDG1 S1 HDG2 S2 { "GUI" ´ RASBFRM ª } }
+MENU
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:            ROASAMBA
+  @ DESCRIPTIOIN:    Main program for calculating radius of action.
+  @ INPUT:      wd      Wind direction
+  @             ws      Wind speed
+  @             tc1     Track OUT FROM base
+  @             t       Safe endurance (hrs)
+  @             tas     True air speed
+  @             dhom    Distance from FIX to HOME base
+  @ OUTPUT:     t1      Time to turn (time to radius of acion)
+  @             r       Radius of action (distance from FIX)
+  @             dfmh    Radius of action (distance from HOME base)
+  @             hdg1    Heading OUT FROM base
+  @             s1      Ground speed OUT FROM base
+  @             hdg2    Heading IN TO base
+  @             s2      Ground speed IN TO base
+  @  
+  ç wd ws tc1 t tas dhom             @ Input variables
+  ´  
+     tas tc1 wd ws THGS              @ Calculate wind triangle 1 (OUT)
+     DROP                            @ Crab angle
+     ç hdg1 s1                       @ hdg1 = heading OUT, s1 = gnd. spd. OUT.
+     ´  
+        tc1 180 +                    @ Start calculate wind triangle 2 (BACK)
+        ç tc2                        @ Track BACK (reciprocal of track OUT)
+        ´  
+           IF tc2 360 >              @ Normalise tc2 if > 360 deg.
+           THEN tc2 360 - 'tc2' STO
+           END
+           tas tc2 wd ws THGS        @ Calculate wind triangle 2 (BACK)
+           DROP                      @ Crab angle
+           ç hdg2 s2                 @ hdg2 = hdg. BACK, s2 = gnd. spd. BACK
+           ´  
+              dhom S2 /              @ Calculate thom = time HOME from FIX
+              ç thom                 @ thom = time HOME from FIX
+              ´  
+                 '(t-thom)*s2/(s1+s2)' çNUM   @ Calc. time to turn, from FIX
+                 ç t1
+                 ´  
+                    t1 s1 *          @ Calculate radius of action from FIX
+                    ç r              @ r = radius of action from FIX
+                    ´                
+                       dhom r +      @ Calculate radius of action from HOME
+                       ç dfmh        @ dfmh = radius of action from HOME
+                       ´  
+                          t1 r dfmh hdg1 s1 hdg2 s2     @ OUTPUTS
+                       ª
+                    ª
+                 ª
+              ª
+           ª
+        ª
+     ª     
+  ª
+ª
+'ROASAMBA' STO                            @ Store in ROA
+@----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+´ @ NAME:            RASBFRM
+  @ DESCRIPTION:     Creates the input form for the radius of action problem.
+  @ INPUT:      WD   Wind direction (from)
+  @             WS   Wind speed
+  @             TC1  Track OUTBOUND
+  @             T    Safe endurance (hrs)
+  @             TAS  True air speed
+  @             DHOM Distance from FIX back to HOME
+  @ OUTPUT:     T1   Time to turn (from FIX)
+  @             R    Radius of action (from FIX)
+  @             DFMH Radius of action (from HOME base)
+  @             HDG1 Heading OUTBOUND
+  @             S1   Ground speed OUTBOUND
+  @             HDG2 Heading INBOUND
+  @             S2   Ground speed INBOUND
+  @
+  WHILE 
+        { WD WS TC1 T TAS DHOM }       @ Input list of variables
+        EVAL 6 çLIST                   @ Initial values
+        ç initlst
+        ´  
+           "ROA - SAME BASE - INPUT"
+           {
+           { "WD:" "WIND DIRECTION (FROM)" 0 }
+           { "WS:" "WIND SPEED" 0 }
+           { "TC1:" "TRACK OUTBOUND" 0 }
+           { "T:" "SAFE ENDURANCE (HOURS)" 0 }
+           { "TAS:" "TRUE AIR SPEED" 0 }
+           { "DHOM:" "DISTANCE FROM FIX BACK TO HOME" 0 }
+           }
+           { 2 0 }
+           { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+           initlst
+           INFORM
+           DUP
+           IF 1 ==
+           THEN SWAP { WD WS TC1 T TAS DHOM } STO
+           ELSE CST MENU
+           END
+        ª
+  REPEAT  
+        WD WS TC1 T TAS DHOM ROASAMBA
+        7 çLIST DUP
+        { T1 R DFMH HDG1 S1 HDG2 S2 } STO
+        ç initlst
+        ´  
+           "ROA - SAME BASE - OUTPUT"
+           {
+           { "T1:" "TIME TO TURN (FROM FIX)" 0 }
+           { "R:" "RADIUS OF ACTION (FROM FIX)" 0 }
+           { "DFMH:" "RADIUS OF ACTION FROM HOME" 0 }
+           { }
+           { "HDG1:" "HEADING OUTBOUND" 0 }
+           { "S1:" "GROUND SPEED OUTBOUND" 0 }
+           { "HDG2:" "HEADING INBOUND" 0 }
+           { "S2:" "GROUND SPEED INBOUND" 0 }
+           }
+           { 2 0 }
+           { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+           initlst
+           INFORM
+           IF 1 ==
+           THEN DROP END
+        ª
+  END
+ª
+'RASBFRM' STO
+@-------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+803 '$ROMID' STO
+
+"ROASB : Radius of Action, return to same base" '$TITLE' STO
+
+@ For HP48gx.  Set '$CONFIG' = 1. for HP50g.
+´ 803 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ ROASAMBA RASBFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for HP50g.
+{ WD WS TC1 T TAS DHOM T1 R DFMH HDG1 S1 HDG2 S2 CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Delete '$VARS' for HP50g.
+{ WD WS TC1 T TAS DHOM T1 R DFMH HDG1 S1 HDG2 S2 CST } '$VARS' STO
+@---------------------------------------------------------------------------

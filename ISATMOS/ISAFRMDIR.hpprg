@@ -1,0 +1,106 @@
+%%HP: T(3)A(D)F(.);
+@============================================================================
+@ DESCRIPTION:  Directory update ONLY.
+@               Input/output form for ISATM in ISATMOS directory.
+@               Assumes library 806 (ISATM) already exists on HP50g and 
+@               this file only provides and updates the CST menu and the ISAFRM
+@               program.
+@               ISATMOS & ISAFRMDIR are both required to create the HP48GX
+@               library 806.
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+@ CST menu
+{ PA T1 P1 ó1 A1 { "GUI" ´ ISAFRM ª } { "GEOPO" ´ GEOPO ª } 
+  { "ISAT" ´ ISAT ª } { "ISAP" ´ ISAP ª }
+  { "ISAó" ´ ISAó ª } { "ISAa" ´ ISAa ª } { "GUI" ´ ISAFRM ª } }
+MENU                            @ Create CST menu
+@----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            ISAFRM
+  @ DESCRIPTION:     Input/output form for ISATM.  Calculates the properties
+  @                  for the ISA for input of geometric altitude, or accepts
+  @                  one of the properties as input and solves for geometric
+  @                  altitude and the remaining properties.
+  @ IN/OUTPUT:     PA    Geometric altitude (pressure altitude) (with units)
+  @                T1    Standard ISA temperature at altitude (deg C)
+  @                P1    Standard ISA pressure at altitude (mbar)
+  @                ó1    Standard ISA density at altitude (kg/m^3)
+  @                A1    Speed of sound in ISA (knot)
+  @
+  WHILE
+       { PA T1 P1 ó1 A1 } EVAL 5 çLIST           @ Initial values, inputs
+       ç initlst                                 @ initial values list
+       ´  
+          "ISA"                                  @ Input form
+          {
+          { "PA:" "PRESSURE ALTITUDE" 13 }
+          { }
+          { "T1:" "STATIC AIR TEMP. (TRUE ∞C)" 13 }
+          { "P1:" "STATIC PRESSURE" 13 }
+          { "ó1:" "DENSITY" 13 }
+          { "a1:" "SPEED OF SOUND" 13 }
+          }
+          { 2 0 }
+          { NOVAL NOVAL NOVAL NOVAL NOVAL }      @ Resets
+          initlst                                @ Initial values
+          INFORM                                 @ Display input form.
+          DUP
+          IF 1 ==                                @ OK = 1, CANCEL = 0
+             THEN SWAP { PA T1 P1 ó1 A1 } STO    @ OK pressed
+             ELSE                                @ CANCEL pressed
+          END
+       ª
+  REPEAT                                         @ OK pressed, perform calcs.
+       IF PA NOVAL ã                                     @ PA is supplied
+          THEN PA DUP ISAT '1_∞C' CONVERT                @ Calc. temp.
+               SWAP DUP ISAP                             @ Calc. pressure
+               SWAP DUP ISAó                             @ Calc. density
+               SWAP ISAa                                 @ Calc. speed of sound
+               '1_knot' CONVERT                          @ Convert to knots
+               4 çLIST { T1 P1 ó1 A1 } STO               @ STO in global vars.
+          ELSE                                           @ PA is NOT supplied
+              CASE
+                  T1 NOVAL ã THEN                        @ Temp. is supplied
+                     T1 '1_K' CONVERT 'T1' STO           @ Convert to K
+                     'T1=ISAT(PA)' 'PA' 0_ft ROOT        @ Solve for PA
+                     T1 '1_∞C' CONVERT                   @ Conv. T1 to deg C.
+                     SWAP DUP ISAP                       @ Calc. pressure
+                     SWAP DUP ISAó                       @ Calc. density
+                     SWAP ISAa                           @ Calc. speed of sound
+                     '1_knot' CONVERT                    @ Convert to knots
+                     4 çLIST { T1 P1 ó1 A1 } STO         @ STO in global vars.
+                  END
+                  P1 NOVAL ã THEN                        @ Pressure is supplied
+                     'P1=ISAP(PA)' 'PA' 0_ft ROOT        @ Solve for PA
+                     DUP ISAT '1_∞C' CONVERT             @ Calc. temperature
+                     SWAP P1                             @ Press. supplied
+                     SWAP DUP ISAó                       @ Calc. density
+                     SWAP ISAa                           @ Calc. speed of sound
+                     '1_knot' CONVERT                    @ Convert to knots
+                     4 çLIST { T1 P1 ó1 A1 } STO         @ STO in global vars.
+                  END
+                  ó1 NOVAL ã THEN                        @ Density is supplied
+                     'ó1=ISAó(PA)' 'PA' 0_ft ROOT        @ Solve for PA
+                     DUP ISAT '1_∞C' CONVERT             @ Calc. temperature
+                     SWAP DUP ISAP                       @ Calc. pressure
+                     SWAP ó1                             @ Density supplied
+                     SWAP ISAa                           @ Calc. speed of sound
+                     '1_knot' CONVERT                    @ Convert to knots.
+                     4 çLIST { T1 P1 ó1 A1 } STO         @ STO in global vars.
+                  END
+                  A1 NOVAL ã THEN                        @ Spd. of snd. supplyd
+                     A1 UBASE 'A1' STO                   @ Conv. A1 to m/s
+                     'A1=ISAa(PA)' 'PA' 0_ft ROOT        @ Solve for PA
+                     DUP ISAT '1_∞C' CONVERT             @ Calc. temperature
+                     SWAP DUP ISAP                       @ Calc. pressure
+                     SWAP ISAó                           @ Calc. density
+                     A1                                  @ Speed of sound avail.
+                     '1_knot' CONVERT                    @ Convert to knots
+                     4 çLIST { T1 P1 ó1 A1 } STO         @ STO in global vars.
+                  END   
+              END                                  @ CASE
+       END                                         @ IF
+  END                                              @ REPEAT  
+ª
+'ISAFRM' STO
+@------------------------------------------------------------------------------

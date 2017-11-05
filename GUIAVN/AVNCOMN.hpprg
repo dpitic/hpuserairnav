@@ -1,0 +1,108 @@
+%%HP: T(3)A(D)F(.);
+@==============================================================================
+« @ NAME:            AVNCOMN
+  @ Description:     GUI CHOOSE Box for all aviation functions and programs.
+  @                  This program changes the directory to the temporary work
+  @                  directory (TEMPDIR) and runs all of the applications
+  @                  from that directory. When the program exits, it returns
+  @                  to the original PATH.
+  @ Author:          Dan Pitic
+  @ Version:         1.2
+  @ Date:            19 June 2009
+  @ Arguments:       ROACOMN
+  @
+  DO
+@HALT
+    "AVIATION MENU"
+    {
+    { "ISA" « PATH                       @ Get current dir. PATH
+              TEMPDIR                    @ Change dir. to TEMPDIR
+              'RETDIR' STO               @ Save return directory path
+              ISAFRM                     @ Run ISA GUI
+              RETDIR                     @ Recall return directory path
+              EVAL   » }                 @ PATH back to original dir.
+    { "ALTITUDE" « PATH                  @ Get current dir. PATH
+                   TEMPDIR               @ Change dir. to TEMPDIR
+                   'RETDIR' STO          
+                   ALTFRM                @ Run Altitude GUI
+                   RETDIR
+                   EVAL » }              @ PATH back to original dir.
+    { "AIRSPEED" « PATH                  @ Get current dir. PATH
+                   TEMPDIR               @ Change dir. to TEMPDIR
+                   'RETDIR' STO
+                   ASPDFRM               @ Run Airspeed GUI
+                   RETDIR
+                   EVAL » }              @ PATH back to original dir.
+    { "WIND TRIANGLE" « PATH             @ Get current dir. PATH
+                        TEMPDIR          @ Change dir. to TEMPDIR
+                        'RETDIR' STO     @ Save return directory path
+                        WNDTR            @ Run Wind triangle GUI
+                        RETDIR           @ Recall return directory path
+                        EVAL » }         @ PATH back to original dir.
+    { "EQUI-TIME POINT" « PATH           @ Get current dir. PATH
+                          TEMPDIR        @ Change dir. to TEMPDIR
+                          'RETDIR' STO
+                          GUIONTETP      @ Run ETP GUI
+                          RETDIR
+                          EVAL » }       @ PATH back to original dir.
+    { "RADIUS OF ACTION" « PATH          @ Get current dir. PATH
+                           TEMPDIR
+                           'RETDIR' STO
+                           ROACOMN       @ Run ROACOMN 
+                           RETDIR
+                           EVAL » }      @ PATH back to original dir.
+    { "INTERCEPTION" « PATH              @ Get current dir. PATH
+                       TEMPDIR           @ Change dir. to TEMPDIR
+                       'RETDIR' STO
+                       INFRM             @ Run Intercept GUI
+                       RETDIR
+                       EVAL » }          @ PATH back to original dir.
+    }
+    1
+    CHOOSE                                    @ Create CHOOSE box
+    IF 1 ==                                   @ If a selection is made?
+       THEN EVAL 1                            @ Execute selection
+       ELSE 0                                 @ ELSE return 0 (CANCEL)
+    END
+   UNTIL                                          @ CANCEL returns 0
+        0 ==                                      @ Exit program.
+   END
+»
+'AVNCOMN' STO
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+« @ NAME:            ROACOMN
+  @ Description:     GUI CHOOSE Box for Radius of Action problems.  Changes
+  @                  directory to common directory TEMPDIR and runs individual
+  @                  ROA program from that directory.
+  @ Arguments:       AVNCOMN
+  @
+  DO
+@HALT
+    "RADIUS OF ACTION"
+    {
+    { "PNR (VAR. FUEL FLOW)" « @TEMPDIR     @ @ Change dir. to TEMPDIR
+                               PNRFRM » }   @ Run PNR GUI
+    { "ALTERNATE BASE" « @TEMPDIR           @ @ Change dir. to TEMPDIR
+                         RAABFRM » }        @ Run Alt. Base ROA GUI
+    { "MOVING BASE" « @TEMPDIR              @ @ Change dir. to TEMPDIR
+                      RAMBFRM » }           @ Run Mov. Base ROA GUI
+    { "SAME BASE" « @TEMPDIR                @ @ Change dir. to TEMPDIR
+                    RASBFRM » }             @ Run Same Base ROA GUI
+    }
+    1
+    CHOOSE                                  @ Creat CHOOSE box
+    IF 1 ==                                 @ If a selection is made?
+      THEN EVAL 1                           @ Execute selection
+      ELSE 0                                @ ELSE return 0 (CANCEL)
+    END
+  UNTIL                                     @ CANCEL returns 0
+       0 ==                                 @ Exit program.
+  END
+»
+'ROACOMN' STO
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+{ AVNCOMN TEMPDIR }
+MENU
+@-----------------------------------------------------------------------------

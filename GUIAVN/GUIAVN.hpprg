@@ -1,0 +1,91 @@
+%%HP: T(3)A(D)F(.);
+@==============================================================================
+« @ NAME:            AVNGUI
+  @ Description:     GUI CHOOSE Box for all aviation functions and programs.
+  @                  This program changes the directory to the work directory
+  @                  for each individual application and runs the application
+  @                  from it's own directory.
+  @ Author:          Dan Pitic
+  @ Version:         1.0
+  @ Date:            06 April 2009
+  @ Arguments:       ROACHOOSE
+  @
+  DO
+    
+    "AVIATION MENU"
+    {
+    { "ISA" « PATH                       @ Get current dir. PATH
+              ISATMOS                    @ Change dir. to ISATMOS
+              ISAFRM                     @ Run ISA GUI
+              EVAL   » }                 @ PATH back to original dir.
+    { "ALTITUDE" « PATH                  @ Get current dir. PATH
+                   ALTITUDE              @ Change dir. to ALTITUDE
+                   ALTFRM                @ Run Altitude GUI
+                   EVAL » }              @ PATH back to original dir.
+    { "AIRSPEED" « PATH                  @ Get current dir. PATH
+                   AIRSPD                @ Change dir. to AIRSPD
+                   ASPDFRM               @ Run Airspeed GUI
+                   EVAL » }              @ PATH back to original dir.
+    { "WIND TRIANGLE" « PATH             @ Get current dir. PATH
+                        WIND             @ Change dir. to WIND
+                        WNDTR            @ Run Wind triangle GUI
+                        EVAL » }         @ PATH back to original dir.
+    { "EQUI-TIME POINT" « PATH           @ Get current dir. PATH
+                          ONTRKETP       @ Change dir. to ONTRKETP
+                          GUIONTETP      @ Run ETP GUI
+                          EVAL » }       @ PATH back to original dir.
+    { "RADIUS OF ACTION" « PATH          @ Get current dir. PATH
+                           ROACHOOSE     @ Run ROACHOOSE 
+                           EVAL » }      @ PATH back to original dir.
+    { "INTERCEPTION" « PATH              @ Get current dir. PATH
+                       INTERCEPT         @ Change dir. to INTERCEPT
+                       INFRM             @ Run Intercept GUI
+                       EVAL » }          @ PATH back to original dir.
+    }
+    1
+    CHOOSE                                    @ Create CHOOSE box
+    IF 1 ==                                   @ If a selection is made?
+       THEN EVAL 1                            @ Execute selection
+       ELSE 0                                 @ ELSE return 0 (CANCEL)
+    END
+   UNTIL                                          @ CANCEL returns 0
+        0 ==                                      @ Exit program.
+   END
+»
+'AVNGUI' STO
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+« @ NAME:            ROACHOOSE
+  @ Description:     GUI CHOOSE Box for Radius of Action problems.  Changes
+  @                  directory to individual ROA directory and runs individual
+  @                  ROA program from that directory.
+  @ Arguments:       AVNGUI
+  @
+  DO
+    "RADIUS OF ACTION"
+    {
+    { "PNR (VAR. FUEL FLOW)" « RADOACT      @ Change dir. to RADOACT 
+                               PNRVFF       @ Change dir. to PNRVFF
+                               PNRFRM » }   @ Run PNR GUI
+    { "ALTERNATE BASE" « RADOACT            @ Change dir. to RADOACT
+                         ALTBASE            @ Change dir. to ALTBASE
+                         RAABFRM » }        @ Run Alt. Base ROA GUI
+    { "MOVING BASE" « RADOACT               @ Change dir. to RADOACT
+                      MOVBASE               @ Change dir to MOVBASE
+                      RAMBFRM » }           @ Run Mov. Base ROA GUI
+    { "SAME BASE" « RADOACT                 @ Change dir. to RADOACT
+                    SAMEBASE                @ Change dir. to SAMEBASE
+                    RASBFRM » }             @ Run Same Base ROA GUI
+    }
+    1
+    CHOOSE                                  @ Creat CHOOSE box
+    IF 1 ==                                 @ If a selection is made?
+      THEN EVAL 1                           @ Execute selection
+      ELSE 0                                @ ELSE return 0 (CANCEL)
+    END
+  UNTIL                                     @ CANCEL returns 0
+       0 ==                                 @ Exit program.
+  END
+»
+'ROACHOOSE' STO
+@-----------------------------------------------------------------------------

@@ -1,0 +1,168 @@
+%%HP: T(3)A(D)F(.);
+@==========================================================================
+@ NAME:            ROAALTBA
+@ LIBRARY #:       805
+@ DESCRIPTION:     Collection of functions and programs to solve 
+@                  radius of action to an ALTERNATE base.
+@ Author:          Dan Pitic
+@ Version:         1.3
+@ Date:            26 March 2009
+@ Arguments:       WIND
+@                  ROAMB
+@-------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+@ CST menu
+{ WD WS BRG DIST TAS TC1 T { "SOLVE" ´ WD WS BRG DIST TAS TC1 T ROAAB
+ 'MC2' STO 'GS2' STO 'TC2' STO 'HDG2' STO 'T2' STO 'GS1' STO 'HDG1' STO
+  'T1' STO 'R' STO ª } R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 { "GUI" ´ RAABFRM ª } }
+MENU
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:            ROAAB
+  @ DESCRIPTION:     Solves the radius of action problem to an alternate base
+  @                  by setting up input variables for the solution of the
+  @                  radius of action to a MOVING base.
+  @ INPUT:      wd   Wind direction (from)
+  @             ws   Wind speed
+  @             brg  Bearing to alternate base
+  @             dist Distane to alternate base
+  @             tas  True air speed
+  @             tc1  Initial track from FIX
+  @             t    Safe endurance (hours)
+  @ OUTPUT:     r    Radius of action (from FIX)
+  @             t1   Time to turn (time to radius of action from FIX)
+  @             hdg1 Heading OUTBOUND
+  @             gs1  Ground speed OUTBOUND
+  @             t2   Time INBOUND
+  @             hdg2 Heading INBOUND
+  @             tc2  Track INBOUND
+  @             gs2  Ground speed INBOUND
+  @             mc2  Miles on course INBOUND
+  @
+  ç wd ws brg dist tas tc1 t  @ INPUTS
+  ´  
+     brg                      @ Bearing to alternate = track of ficticious ship
+     ç trs
+     ´  
+        dist t /              @ Calc. ground speed of ficticious ship
+        ç gss
+        ´                     @ Calc. radius of action from MOVING BASE
+           wd ws trs gss tas tc1 t ROAMB
+        ª
+     ª
+  ª
+ª
+'ROAAB' STO
+@-----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+´ @ NAME:            RAABF
+  @ DESCRIPTION:     Creates the input form for the radius of action problem.
+  @ INPUT:      WD   Wind direction (from)
+  @             WS   Wind speed
+  @             BRG  Bearing to alternate base
+  @             DIST Distance to alternate base
+  @             TAS  True air speed
+  @             TC1  Track OUT from point of departure or FIX
+  @             T    Safe endurance (hrs)
+  @ OUTPUT:     R    Radius of action (from FIX)
+  @             T1   Time to turn (from FIX)            
+  @             HDG1 Heading OUTBOUND
+  @             GS1  Ground speed OUTBOUND
+  @             T2   Time INBOUND 
+  @             HDG2 Heading INBOUND
+  @             GS2  Ground speed INBOUND
+  @             MC2  Miles on course INBOUND 
+  @
+  WHILE 
+        { WD WS BRG DIST TAS TC1 T }       @ Input list of variables
+        EVAL 7 çLIST                       @ Initial values
+        ç initlst
+        ´  
+           "ROA - ALTERNATE BASE - INPUT"
+           {
+           { "WD:" "WIND DIRECTION (FROM)" 0 }
+           { "WS:" "WIND SPEED" 0 }
+           { "BRG:" "BEARING TO ALTERNATE" 0 }
+           { "DIST:" "DISTANCE TO ALTERNATE" 0 }
+           { "TAS:" "TRUE AIR SPEED" 0 }
+           { "TC1:" "TRACK OUTBOUND" 0 }
+           { "T:" "SAFE ENDURANCE (HOURS)" 0 }
+           }
+           { 2 0 }
+           { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+           initlst
+           INFORM
+           DUP
+           IF 1 ==
+           THEN SWAP { WD WS BRG DIST TAS TC1 T } STO
+           ELSE CST MENU
+           END
+        ª
+  REPEAT 
+        WD WS BRG DIST TAS TC1 T ROAAB
+        9 çLIST
+        { R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 } STO
+        WHILE
+             R T1 HDG1 GS1 4 çLIST
+             ç initlst1
+             ´  
+                "ROA - ALTERNATE BASE - OUTBOUND"
+                {
+                { "R:" "RADIUS OF ACTION (FROM FIX)" 0 }
+                { "T1:" "TIME TO TURN (FROM FIX)" 0 }
+                { "HDG1:" "HEADING OUTBOUND" 0 }
+                { "GS1:" "GROUND SPEED OUTBOUND" 0 }
+                }
+                { 1 0 }
+                { NOVAL NOVAL NOVAL NOVAL }
+                initlst1
+                INFORM
+                DUP
+                IF 1 ==
+                THEN SWAP DROP END
+             ª
+        REPEAT
+              T2 HDG2 TC2 GS2 MC2 5 çLIST
+              ç initlst2
+              ´  
+                "ROA - ALTERNATE BASE - INBOUND"
+                {
+                { "T2:" "TIME INBOUND (FROM TURN)" 0 }
+                { "HDG2:" "HEADING INBOUND" 0 }
+                { "TC2:" "TRACK INBOUND" 0 }
+                { "GS2:" "GROUND SPEED INBOUND" 0 }
+                { "MC2:" "MILES ON COURSE INBOUND" 0 }
+                { }
+                }
+                { 2 0 }
+                { NOVAL NOVAL NOVAL NOVAL NOVAL }
+                initlst2
+                INFORM
+                IF 1 ==
+                THEN DROP END
+              ª
+        END
+  END
+ª
+'RAABFRM' STO
+@-------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+805 '$ROMID' STO
+
+"ROAAB : Radius of Action, to alternate base" '$TITLE' STO
+
+@ For HP48gx.  Set '$CONFIG' = 1. for HP50g.
+´ 805 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ ROAAB RAABFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for HP50g.
+{ WD WS BRG DIST TAS TC1 T R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 CST $CONFIG }
+ '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Delete '$VARS' for HP50g.
+{ WD WS BRG DIST TAS TC1 T R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 CST } '$VARS' STO
+@---------------------------------------------------------------------------

@@ -1,0 +1,210 @@
+%%HP: T(3)A(D)F(.);
+@==========================================================================
+@ NAME:            ROAMOVBA
+@ LIBRARY #:       804
+@ DESCRIPTION:     Collection of functions and programs to solve 
+@                  radius of action to a MOVING base.
+@ Author:          Dan Pitic
+@ Version:         1.5
+@ Date:            26 March 2009
+@ Arguments:       WIND
+@-------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+@ CST menu
+{ WD WS TRS GSS TAS TC1 T { "SOLVE" ´ WD WS TRS GSS TAS TC1 T ROAMB
+ 'MC2' STO 'GS2' STO 'TC2' STO 'HDG2' STO 'T2' STO 'GS1' STO 'HDG1' STO
+  'T1' STO 'R' STO ª } R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 { "GUI" ´ RAMBFRM ª } }
+MENU
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:            ROAMB
+  @ DESCRIPTION:     Solves the radius of action problem to a moving base.
+  @ INPUT:      wd   Wind direction (from)
+  @             ws   Wind speed
+  @             trs  Track of ship
+  @             gss  Ground speed of ship
+  @             tas  True air speed
+  @             tc1  Initial track from point of departure (from ship)
+  @             t    Safe endurance (hours)
+  @ OUTPUT:     r    Radius of action
+  @             t1   Time to turn (time to radius of action)
+  @             hdg1 Heading OUTBOUND
+  @             gs1  Ground speed OUTBOUND
+  @             t2   Time INBOUND (after turn)
+  @             hdg2 Heading INBOUND (after turn)
+  @             tc2  Track INBOUND (after turn)
+  @             gs2  Ground speed INBOUND (after turn)
+  @             mc2  Miles on course INBOUND (after turn)
+  @  
+  -15 CF -16 SF                       @ Set POLAR mode
+  -17 CF -18 CF                       @ Set DEG mode.    
+  ç wd ws trs gss tas tc1 t           @ Inputs
+  ´  
+     tas tc1 wd ws THGS               @ Calculate wind triangle 1
+     DROP                             @ Crab angle
+     ç hdg1 gs1
+     ´  
+        ws wd çV2                     @ Create -WIND vector
+        gss trs çV2                   @ Create TARGET GROUND vector
+        +                             @ Calculate -RELATIVE wind vector
+        Vç                            @ rws, rwd (from)
+        ç rws rwd                     @ RELATIVE wind speed and direction (from)
+        ´  
+           IF rwd 0 <                  @ Make sure rwd is NOT < 0
+           THEN rwd 360 + 'rwd' STO 
+           END
+           hdg1 tas rwd rws CGVE       @ Calculate rel. wnd. triangle (2)
+           DROP                        @ Crab angle
+           ç drm1 s1                   @ drm1 = direction of rel. motion
+           ´                           @ s1 = rate of departure
+              drm1 180 +               @ drm2 = direction of closure
+              ç drm2
+              ´  
+                 IF drm2 360 >         @ Make sure drm2 is NOT > 360 deg.
+                 THEN drm2 360 - 'drm2' STO
+                 END
+                 tas drm2 rwd rws THGS  @ Calculate rel. wnd. triangle (3)
+                 DROP                   @ Crab angle
+                 ç hdg2 s2              @ hdg2 = Intercept heading
+                 ´                      @ s2 = rate of closure
+                    hdg2 tas wd ws CGVE @ Calc. wind triangle (4)
+                    DROP                @ Crab angle
+                    ç tc2 gs2           @ tc2 = track to intercept
+                    ´                   @ gs2 = ground speed after turn
+                       't*s2/(s1+s2)' çNUM
+                       ç t1             @ Calc. time to turn.
+                       ´  
+                          t t1 -        @ Calc. time to intercept
+                          ç t2          @ t2 = time INBOUND (after turn)
+                          ´  
+                             t1 gs1 *   @ Calc. radius of action
+                             ç r
+                             ´  
+                                t2 gs2 *  @ Calc. distance after turn
+                                ç mc2     @ mc2 = miles on course after turn
+                                ´         @ OUTPUTS
+                                   r t1 hdg1 gs1 t2 hdg2 tc2 gs2 mc2
+                                ª         
+                             ª
+                          ª 
+                       ª
+                    ª
+                 ª
+              ª
+           ª
+        ª
+     ª
+  ª
+ª
+'ROAMB' STO
+@-----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+´ @ NAME:            RAMBFRM
+  @ DESCRIPTION:     Creates the input form for the radius of action problem.
+  @ INPUT:      WD   Wind direction (from)
+  @             WS   Wind speed
+  @             TC1  Track OUTBOUND
+  @             T    Safe endurance (hrs)
+  @             TAS  True air speed
+  @             DHOM Distance from FIX back to HOME
+  @ OUTPUT:     T1   Time to turn (from FIX)
+  @             R    Radius of action (from FIX)
+  @             DFMH Radius of action (from HOME base)
+  @             HDG1 Heading OUTBOUND
+  @             S1   Ground speed OUTBOUND
+  @             HDG2 Heading INBOUND
+  @             S2   Ground speed INBOUND
+  @
+  WHILE 
+        { WD WS TRS GSS TAS TC1 T }       @ Input list of variables
+        EVAL 7 çLIST                      @ Initial values
+        ç initlst
+        ´  
+           "ROA - MOVING BASE - INPUT"
+           {
+           { "WD:" "WIND DIRECTION (FROM)" 0 }
+           { "WS:" "WIND SPEED" 0 }
+           { "TRS:" "TRACK OF SHIP" 0 }
+           { "GSS:" "GROUND SPEED OF SHIP" 0 }
+           { "TAS:" "TRUE AIR SPEED" 0 }
+           { "TC1:" "TRACK OUTBOUND" 0 }
+           { "T:" "SAFE ENDURANCE (HOURS)" 0 }
+           }
+           { 2 0 }
+           { NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL }
+           initlst
+           INFORM
+           DUP
+           IF 1 ==
+           THEN SWAP { WD WS TRS GSS TAS TC1 T } STO
+           ELSE CST MENU
+           END
+        ª
+  REPEAT 
+        WD WS TRS GSS TAS TC1 T ROAMB
+        9 çLIST
+        { R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 } STO
+        WHILE
+             R T1 HDG1 GS1 4 çLIST
+             ç initlst1
+             ´  
+                "ROA - MOVING BASE - OUTBOUND"
+                {
+                { "R:" "RADIUS OF ACTION (FROM DEP.)" 0 }
+                { "T1:" "TIME TO TURN (FROM DEP)" 0 }
+                { "HDG1:" "HEADING OUTBOUND" 0 }
+                { "GS1:" "GROUND SPEED OUTBOUND" 0 }
+                }
+                { 1 0 }
+                { NOVAL NOVAL NOVAL NOVAL }
+                initlst1
+                INFORM
+                DUP
+                IF 1 ==
+                THEN SWAP DROP END
+             ª
+        REPEAT
+              T2 HDG2 TC2 GS2 MC2 5 çLIST
+              ç initlst2
+              ´  
+                "ROA - MOVING BASE - INBOUND"
+                {
+                { "T2:" "TIME INBOUND (FROM TURN)" 0 }
+                { "HDG2:" "HEADING INBOUND" 0 }
+                { "TC2:" "TRACK INBOUND" 0 }
+                { "GS2:" "GROUND SPEED INBOUND" 0 }
+                { "MC2:" "MILES ON COURSE INBOUND" 0 }
+                { }
+                }
+                { 2 0 }
+                { NOVAL NOVAL NOVAL NOVAL NOVAL }
+                initlst2
+                INFORM
+                IF 1 ==
+                THEN DROP END
+              ª
+        END
+  END
+ª
+'RAMBFRM' STO
+@---------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+804 '$ROMID' STO
+
+"ROAMB : Radius of action, to moving base" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g.
+´ 804 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ ROAMB RAMBFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete '$HIDDEN' for HP50g.
+{ WD WS TRS GSS TAS TC1 T R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2
+ CST $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Delete '$VARS' for HP50g.
+{ WD WS TRS GSS TAS TC1 T R T1 HDG1 GS1 T2 HDG2 TC2 GS2 MC2 CST } '$VARS' STO
+@---------------------------------------------------------------------------

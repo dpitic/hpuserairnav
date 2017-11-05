@@ -1,0 +1,662 @@
+
+
+
+
+
+
+
+                    Instructions for MS-DOS program "USRLIB"
+
+       *****************************************************************
+                                     NOTICE
+
+       Hewlett-Packard is making the current preliminary version 2.2 of
+       USRLIB.EXE available to customers free of charge to help them in
+       HP 48SX application development, under the following conditions:
+
+       * The program USRLIB.EXE and the documentation file USRLIB.MAN are
+       provided "as is," and are subject to change without notice.
+       Hewlett-Packard Company make no warranty of any kind with regard
+       to the software or documentation, including, but not limited to,
+       the implied warranties of merchantability and fitness for a
+       particular purpose.  Hewlett-Packard Company shall not be liable
+       for any error or for incidental or consequential damages in
+       connection with the furnishing, performance, or use of this
+       software and documentation.
+
+       * The program and documentation are copyrighted by Hewlett-
+       Packard.  Customers may freely reproduce and distribute this
+       material.  Sale of this material is prohibited without prior
+       written permission of Hewlett-Packard Company.
+
+       * The HP Customer Support department does not support the current
+       version.  Questions, comments, defect reports, etc. should be
+       directed to the Library Development conference on the HP
+       Calculator Bulletin Board System.  All responses from Hewlett-
+       Packard will normally be provided through that conference.
+
+       * Software converted into libraries by USRLIB.EXE should be tested
+       and qualified in its library form.  Discrepancies between the
+       execution of the libraries and the execution of the original
+       source directory contents should be reported via the Bulletin
+       Board.
+
+       Revised versions of the software and documentation will be posted
+       on the Bulletin Board as they become available.  In particular,
+       future versions will include less cryptic error messages, and
+       better documention of the output listing information provided by
+       the program.
+
+       Version 2.2 of the program USRLIB.EXE is a preliminary version of
+       this software.  Software compiled into libraries using this
+       program should be thoroughly tested in its library form prior to
+       any reproduction or distribution to end users.
+
+       *****************************************************************
+
+
+
+
+
+
+                                   -1-
+
+
+
+
+
+
+
+
+
+
+
+       1.  INTRODUCTION
+
+
+       USRLIB.EXE is an MS-DOS executable file that creates an HP 48
+       library object from an HP 48 directory.  A library is similar to a
+       directory in that both are collections of named objects.  However,
+       a directory normally resides in main RAM memory and is intended
+       for continuous modification and execution, whereas a library
+       contains objects intended for execution only, and can be used from
+       ROM as readily as from RAM.  A directory's objects are organized
+       in a linked list requiring a sequential search for access; a
+       library contains an address table that provides rapid execution
+       access to its individual objects.
+
+
+       1.1  Glossary of Terms
+
+       Directory           HP48 directory object containing zero or more
+                           variables.
+
+       Variable            A named object contained within a directory,
+                           accessed by means of a global name.
+
+       Library             HP 48 library object containing zero or more
+                           library commands.  Libraries include a text
+                           title, a Library ID number, and optional
+                           message tables and configuration code that is
+                           executed at system halts.
+
+       Library command     A named object within a library, which is the
+                           library analog of a directory's variable.
+
+       Global name         HP 48 global name object, execution of which
+                           executes the object in the corresponding
+                           (global) variable.
+
+       XLIB name           HP 48 XLIB name object, execution of which
+                           executes the corresponding library command.
+                           An XLIB name plays the role for libraries that
+                           a global name plays for directories.
+
+       Library ID          A number in the range 0-7FFh that uniquely
+                           identifies a library, and is used as an
+                           argument for HP 48 commands that deal with
+                           libraries as objects.  The following ranges
+                           are defined for the ID numbers:
+
+
+
+
+
+
+
+
+                                   -2-
+
+
+
+
+
+
+
+
+
+
+
+                                  ID Range                    Purpose
+                              Hex        Decimal
+
+                             0 - 100       0 - 256
+                           101 - 200     257 - 512   HP ROM-Based Applications
+                           201 - 300     513 - 768   HP RAM-Based Applications
+                                                     Non-HP Applications
+                                                     (numbers permanently
+                                                     assigned by HP)
+                           301 - 600    769 - 1536
+                           601 - 6FF   1537 - 1792
+                           700 - 7FF   1792 - 2047   HP 48SX Command Line Use
+
+
+
+       1.2  The Source Directory
+
+       USRLIB uses an HP 48 directory object as the source file to define
+       the output library.  The source directory may contain any number
+       of variables, each of which is converted to a library command in
+       the output library (unless specified otherwise; see $VARS,
+       $VISIBLE and $HIDDEN, below).  The objects in the variables are
+       translated as necessary so that any global names in the objects
+       that correspond to variables in the source directory are converted
+       to XLIB names.
+
+       The source directory may contain subdirectories, but in that case
+       the resulting library will not reflect the structure of the
+       directory since a library structure is "flat."  If separate
+       subdirectories contain variables with the same name, the uses of
+       those names within the library will be correct, but the duplicated
+       names will also be duplicated in the LIBRARY menu.  The names of
+       the subdirectories themselves are not translated to library
+       commands, and any use of those names in any of the other variables
+       will result in an error during execution of USRLIB.
+
+       The directory may also include the following special variables:
+
+
+       $ROMID      Contains a real or binary number object representing
+                   the Library ID that is to be given to the library.
+                   This can be overridden by specifying -r<romid> on the
+                   command line.  The ID should be in the range 769 -
+                   1792 (301h - 6FFh).
+
+                   The -r option must be specified from the command line
+                   if no $ROMID is used.
+
+
+       $TITLE      Contains a string to be used as the name of the
+                   library.  This can be overridden by specifying -t<title>
+                   on the command line.  The first (up to) 5 characters
+
+
+
+                                   -3-
+
+
+
+
+
+
+
+
+
+
+
+                   of the title are used for the LIBRARY menu label; the
+                   first 22 characters are displayed by REVIEW.
+
+
+       $CONFIG     Contains an object to be executed at configuration
+                   time.  If no $CONFIG variable is present, no
+                   configuration entry will be generated.  In the current
+                   version of USRLIB, $CONFIG is also translated to a
+                   library command; to prevent this, it $CONFIG should be
+                   declared as hidden (see below).
+
+                   Note: the configuration code can generally NOT be
+                   written in user-accessible commands.  Simple programs
+                   such as << 123 ATTACH >> are OK, but more complicated
+                   programs should take care to leave the stack
+                   unchanged, and be sure NOT TO ERROR.
+
+
+       $MESSAGE    Contains a list of names of variables that contain
+                   strings to be combined into a message table. The
+                   message numbers correspond to the list positions.
+
+                   If no $MESSAGE is present, no message table will be
+                   generated.
+
+
+       $VISIBLE    Contains a list of names of variables to be converted
+                   to user-accessible library commands.
+
+                   By default, all variables will be translated to
+                   library commands.  When the $VISIBLE list is present,
+                   only the names in this list are used as XLIB name
+                   table entries in the library. An empty list is
+                   allowed, meaning that no XLIB name entries are
+                   created.
+
+
+       $HIDDEN     Contains a list of names of variables that are to be
+                   converted to null-named objects in the library, and so
+                   hidden from the library user.
+
+                   When the $HIDDEN list is present, those names listed
+                   are not entered in the library XLIB name table.  If
+                   both $VISIBLE and $HIDDEN are present, only the
+                   $HIDDEN list will be used.
+
+
+       $VARS       Contains a list of variables that should remain RAM-
+                   based, i.e., the stored objects are not included in
+                   the library, and no XLIB name entries are made for
+                   their names.  All other variables in the source
+
+
+
+                                   -4-
+
+
+
+
+
+
+
+
+
+
+
+                   directory names are included as library commands.
+
+       Multiple instances are permitted of the declaration variables
+       $VARS, $HIDDEN, and $VISIBLE variables, in various subdirectories
+       of the source directory.  A particular variable is declared as a
+       RAM variable, hidden, etc., if its name is entered in any of the
+       relevant declaration variables anywhere in the current path
+       defined by the variable's location. That is, a variable XXX found
+       in any subdirectory will be hidden if XXX is in a list stored in
+       $HIDDEN in the top level of the source directory; but YYY in the
+       top level will not be hidden even if YYY is present in a $HIDDEN
+       list in a subdirectory.
+
+       Not all program objects that execute correctly from global
+       variables are directly convertible into libraries.  In general, no
+       checks can be made for such errors, and USRLIB does not attempt to
+       do so.  Here are some known pitfalls:
+
+          o Since a library cannot be modified, no library command may be
+            the target of a STO or PUT operation.
+
+          o XLIB names are not usable in all contexts in which global
+            names are valid arguments.  This can cause constructs that
+            reference a named object to fail.  For example,
+
+                                      'A' 5 GETI
+
+            where A is a list will not work when A is converted to an
+            XLIB name.  Instead use
+
+                                   'A' EVAL 5 GETI
+
+            or better yet
+
+                                      A 5 GETI
+
+            XLIB names are not valid as formal variables in algebraics,
+            or as the independent variable for plotting or solving.
+            Names intended to be used as such should be declared as
+            global using $VARS or the -v option.
+
+          o ->STR applied to a global name that is converted to a
+            ``hidden'' library command (see $HIDDEN) returns a null
+            string.
+
+          o Embedded directories (entered as DIR...END) within lists and
+            programs are not translated except for their first object.
+
+
+
+
+
+
+
+                                   -5-
+
+
+
+
+
+
+
+
+
+
+
+       1.3  Library Creation
+
+       The process of library creation and activation can be summarized
+       as follows.
+
+         1.  Develop an application consisting of any number of programs
+             and other objects, and collect these in one single-level
+             directory in the HP 48.
+
+         2.  Using Kermit binary transfer, send the directory to a PC.
+
+         3.  Execute USRLIB, using the directory as the source file.  In
+             this step, you also assign a library ID and a library title
+             to the output library.
+
+         4.  Transfer the USRLIB output library object back to the HP 48,
+             to a variable in any convenient directory.
+
+         5.  Recall the library object from the variable to which it was
+             transferred, and then store it in a RAM port (:n:x STO,
+             where n is the port number, and x is any number).  After
+             storing the library, you can purge the original copy in the
+             variable to save memory.
+
+         6.  Turn the HP 48 off, then on.  This adds the new library to
+             the system library table, and gives the library a chance to
+             execute its own configuration program, if any.  (The HP 48
+             will execute a system halt automatically at this stage, so
+             you should save any stack objects or PICT first if you wish
+             to recover them.)  The LIBRARY menu will now contain a menu
+             entry labeled with the library's ID number in the PORTn
+             submenu.
+
+         7.  Activate the directory in which you wish the library's
+             commands to be accessible, then execute nnn ATTACH, where
+             nnn is the library ID.  Any number of libraries can be
+             attached to the HOME directory; subdirectories may have one
+             library attached to each.  The main LIBRARY menu will now
+             contain a menu key labeled by the library's title.
+
+       To remove a library, activate its associated directory and execute
+       nnn DETACH.  Then execute :n:ID PURGE to remove the library from
+       port n.  (You will notice a brief jump in the display when you
+       execute the PURGE.  This is normal and harmless.)
+
+
+
+
+
+
+
+
+
+
+                                   -6-
+
+
+
+
+
+
+
+
+
+
+
+       2.  Instructions
+
+       (In the following, <bold> text represents user-supplied text.  Text
+       appearing in brackets [ ] denotes optional entries. In actual
+       entries, the [ ] should not be used.)
+
+       Syntax:
+               USRLIB [-options] <dirfile> [ <libfile> [ <sumfile> ] ]
+
+
+       <dirfile>   is the name of the source file, which must contain a
+                 binary image of an HP48 directory or a backup object
+                 containing a directory.
+
+       <Libfile>   is a file to contain the output library object.
+
+       <sumfile>   This is a textual summary of the names that were
+                 translated.  The following information is given for each
+                 object:  user name, type, offset into the <libfile> file,
+                 XLIB numbers, whether it can be used in an algebraic,
+                 and whether it is visible.
+
+                 Similarly, a list of message numbers and messages and a
+                 summary of the space requirements is given.
+
+       <Sumfile> and the optional <listfile> (see OPTIONS below) may be
+       redirected to stdout by using '-' for the output file name.
+
+
+       2.1  Options
+
+       The following options may be included in the USRLIB command line:
+
+
+       -d<listfile>  <listfile> will contain a text listing of the contents
+                   of each object in the input directory.
+
+
+       -h<header>    Use <header> for the library object header (for file
+                   transfer).
+
+
+       -l<listfile>  <listfile> will contain a text listing of the contents
+                   of each object in the output library. Occurrances of
+                   "ID'name'<--" indicate translation of an name (ID)
+                   into an XLIB or a message table reference.
+
+
+       -r<romid>     Set decimal Library ID (see $ROMID above).
+
+
+
+
+
+                                   -7-
+
+
+
+
+
+
+
+
+
+
+
+       -t<title>     Use <title> for the library title (see $TITLE above).
+
+
+       -v<name>      Declare <name> as a RAM variable name (see $VARS above).
+
+
+       2.2  Restrictions
+
+         1.  The total library output file cannot be larger than 128K
+             bytes.
+
+         2.  Message strings must be less than 64K bytes each.
+
+
+       2.3  Error Messages
+
+       In the following, words shown in parentheses within the quoted
+       error messages represent values that indicate source-specific
+       quantities. (path) represents the path within the source directory
+       to the variable causing the error, in the form name1/name2/... ,
+       where the names are the subdirectoy names (on the HP 48SX, the
+       path would be a list { name1 name2 ... }).
+
+
+       2.3.1  General Errors
+
+       "Cannot allocate memory"  --memory is constantly being allocated
+       for various compiler needs.
+
+       "Unexpected EOF on input"  --EOF was hit when more nibbles were
+       expected.
+
+       "Can't malloc for decomp"  --can't get memory to create decompile
+       information.
+
+
+       2.3.2  Initialization/First Pass Errors
+
+       "USRLIB: Cannot open"  --The source file can not be opened.
+
+       "USRLIB: - not legal for input"  -- "-" (stdin) can't be used for
+       input.
+
+       "Cannot alloc 128K bytes for image"  --Insufficient memory for the
+       library image.
+
+       "ROMID must be in range 769 - 1792"
+
+       "Must have either -r romid or $ROMID"  --no library ID was
+       specified.
+
+
+
+
+                                   -8-
+
+
+
+
+
+
+
+
+
+
+
+       "Need either BAK of a directory or a directory"
+
+       "BAK object does not contain directory"
+
+       "Directory is empty"
+
+       "Object is not a string: (path)/$TITLE"
+
+       The next three messages may occur when ROMID is specified in the
+       variable $ROMID.
+
+       "Illegal Real value for (path)/$ROMID: (value)"
+
+       "Illegal Binary value for (path)/$ROMID: (value)"
+
+       "Object not Real or Binary: (path)/$ROMID"
+
+       The next two messages may occur when a $CONFIG variable (or two)
+       are specified.
+
+       "Object not program: (path)/$CONFIG"
+
+       "$CONFIG redefined: (path)/$CONFIG"
+
+       The next two messages may occur any time a string (variable name
+       or message) isread.
+
+       "Variable name or message too long (>65535)"
+
+       "Out of memory: trying to malloc for string"
+
+       The next three messages may occur when a name list is being read.
+       The $MESSAGE, $VISIBLE, $HIDDEN, and $VARS variables are all name
+       lists.
+
+       "Object is not a list: (path)/name"
+
+       "Non-ID found in list:  (path)/name"
+
+       "Out of memory: (path)/name"
+
+       The next three messages occur during creation of and addition to
+       internal name tables, and are variations of insufficient memory
+       errors.
+
+       "Cannot malloc id table"
+
+       "Cannot malloc id entry: (path)/(name)"
+
+       "Cannot malloc id entry: (path)/(name)"
+
+
+
+
+                                   -9-
+
+
+
+
+
+
+
+
+
+
+
+       2.3.3  Interim/Second Pass Errors
+
+       "Message object not found: (name)"
+
+       "Loss of object synchronism between passes: (path)/(name)"  --
+       (path)/(name) is replaced with the object where out-of-sync was
+       discovered.
+
+       "Name must not exceed 16 characters: (path)/(name)"  --library
+       object names are limited to 16 characters.
+
+       "Keyword cannot resolve to a directory: (path)/(name)"  --
+       Subdirectory names cannot be included in other directory objects'
+       definitions.
+
+       The next two messages may occur as message objects (indicated in
+       the $MESSAGE list) are being converted into a message table.
+
+       "Message object is not a string: (path)/(name)"
+
+       "Multiple definitions for message (path)/(name)"
+
+
+       2.3.4  Clean-up/Write File Phase Errors
+
+       "Library image length is 0.
+        LIB FILE NOT WRITTEN!"
+
+       "Max image size is 256K nibbles ... image is (value) nibbles.
+        LIB FILE NOT WRITTEN!"
+
+       "Unsucessful write to library file"  --unknown error writing to library file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                   -10-
+
+
+
+
+wn er

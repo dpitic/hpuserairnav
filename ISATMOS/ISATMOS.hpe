@@ -1,0 +1,146 @@
+%%HP: T(3)A(D)F(.);
+@============================================================================
+@ Name:            ISATM
+@ LIBRARY #:       806
+@ Description:     For HP48GX library creation ONLY.
+@                  Use ISAFRMDIR to update ISATMOS directory.
+@                  Collection of functions to calculate standard temperature,
+@                  pressure, density and speed of sound  in the ISA
+@                  as a function of altitude.
+@ Author:          Dan Pitic
+@ Version:         1.2
+@ Date:            26 March 2009
+@ Arguments:       ISAFRMDIR      * To update ISATMOS directory and provide *
+@                                 * CST and ISAFRM                          *
+@                                 * Both ISATMOS & ISAFRMDIR are required   *
+@                                 * to create the HP48GX library 806        *
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+@ CST menu
+@ Use ISAFRMDIR to update ISATMOS directory.
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:          ISAT
+  @ DESCRIPTION:   Calculates the standard temperature in ISA up to Z = 20 km.
+  @ INPUT:      STACK  Geopotential Altitude (with units)
+  @ OUTPUT:     STACK  Standard temperature in ISA (Kelvin)
+  @ 
+  ç Z                     @ Z  = Geopotential Altitude
+  ´  -.0065_K/m           @ ﬂ  = Temp. lapse rate 0 m â Z â 11 km
+     288.15_K             @ T0 = Sea level ISA temperature.
+     ç ﬂ T0
+     ´  
+        CASE 
+             Z 20000_m > THEN "ERROR: Alt. > 20 km" 1 DISP 
+                              440 .25 BEEP 3 FREEZE
+                         END
+             Z 11000_m â THEN 'T0 + ﬂ*Z' EVAL UBASE END
+             Z 11000_m > THEN 'T0 + ﬂ*(11000_m)' EVAL UBASE END
+        END
+     ª
+  ª
+ª                      @ Returns the ISA temperature at
+'ISAT' STO             @ altitude Z.
+@------------------------------------------------------------------------------
+@------------------------------------------------------------------------------
+´ @ NAME:            ISAP
+  @ DESCRIPTION:     Calculates the standard pressure in ISA up to Z = 20 km.
+  @ INPUT:      STACK  Geopotential Altitude (with units)
+  @ OUTPUT:     STACK  Standard pressure in ISA (mbar)
+  @ 
+  ç Z                     @ Z  = Geopotential Altitude
+  ´  -.0065_K/m           @ ﬂ  = Temp. lapse rate 0 m â Z â 20 km
+     101325._Pa           @ p0 = Sea level ISA pressure
+     288.15_K             @ T0 = Sea level ISA temperature
+     9.806645_m/s^2       @ g  = Sea level acceleration of gravity
+     287.0528_J/(kg*K)    @ R  = Gas constant for the ISA
+     ç ﬂ p0 T0 g0 R
+     ´  
+        CASE
+            Z 20000_m > THEN "ERROR: Alt. > 20 km" 1 DISP 
+                             440 .25 BEEP 3 FREEZE 
+                        END
+            Z 11000_m â THEN 'p0*((T0+ﬂ*Z)/T0)^(-g0/(R*ﬂ))' EVAL UBASE 
+                             '1_mbar' CONVERT 
+                        END
+            Z 11000_m > THEN 
+                             'p0*((T0+ﬂ*(11000_m))/T0)^(-g0/(R*ﬂ))*EXP(UBASE(-g0*(Z-(11000_m))/(R*ISAT(11000_m))))' 
+                             EVAL UBASE '1_mbar' CONVERT 
+                        END
+        END
+     ª
+  ª
+ª                      @ Returns the ISA pressure at
+'ISAP' STO             @ altitude Z.
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            ISAó
+  @ DESCRIPTION:     Calculates the standard density in ISA up to Z = 20 km.
+  @ INPUT:      STACK  Geopotential Altitude (with units)
+  @ OUTPUT:     STACK  Standard density in ISA (kg/m^3)
+  @
+  ç Z                     @ Z = Geopotential Altitude
+  ´  287.0528_J/(kg*K)    @ R = Gas constant for the ISA
+     ç R                     
+     ´  
+        'ISAP(Z)/(R*ISAT(Z))' EVAL UBASE
+     ª
+  ª
+ª                      @ Returns the ISA density at
+'ISAó' STO             @ altitude Z.
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ NAME:            ISAa
+  @ DESCRIPTION:     Calculates the speed of sound in ISA up to Z = 20 km.
+  @ INPUT:      STACK  Geopotential Altitude (with units)
+  @ OUTPUT:     STACK  Standard speed of sound in ISA (m/s)
+  @
+  ç Z                     @ Z = Geopotential Altitude
+  ´  287.0528_J/(kg*K)    @ R = Gas constant for the ISA
+     1.4                  @ k = Ratio of specific heats
+     ç R k              
+     ´  
+        'É(k*R*ISAT(Z))' EVAL UBASE
+     ª
+  ª
+ª                      @ Returns the speed of sound in ISA
+'ISAa' STO             @ at altitude Z.
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ NAME:            GEOPO
+  @ DESCRIPTION:     Calculates the Geopotential Altitude from geometric alt.
+  @ INPUT:      STACK  Geometric altitude (with units)
+  @ OUTPUT:     STACK  Geopotential Altitude
+  @
+  ç H                  @ H  = Geometric altitude
+  ´  6356766_m         @ re = radius of the Earth
+     ç re               
+     ´  
+        're*H/(re+H)' EVAL UBASE
+     ª
+  ª
+ª                      @ Returns the Geopotential Altitude for the
+'GEOPO' STO            @ geometric altitude input.
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+  @ NAME:            ISAFRM
+  @ DESCRIPTION:     Program removed and moved to ISAFRMDIR.
+  @                  Use ISAFRMDIR to update directory.
+@---------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION: for HP48GX ONLY
+@ Library 806 already exists on HP50g
+@ Delete these variables on HP50g.
+@
+806 '$ROMID' STO
+
+"ISATM : ISA" '$TITLE' STO
+
+´ 806 ATTACH ª '$CONFIG' STO
+
+{ GEOPO ISAT ISAP ISAó ISAa ISAFRM } '$VISIBLE' STO
+
+{ CST $CONFIG } '$HIDDEN' STO
+
+{ PA T1 P1 ó1 A1 CST } '$VARS' STO
+@---------------------------------------------------------------------------

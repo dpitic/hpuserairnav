@@ -1,0 +1,179 @@
+%%HP: T(3)A(D)F(.);
+@============================================================================
+@ Name:            ALT
+@ LIBRARY #:       807
+@ Description:     Collection of functions to calculate true altitude and
+@                  density altitude.
+@ Author:          Dan Pitic
+@ Version:         1.12
+@ Date:            21 April 2009
+@ Arguments:       ISATM         * Library # 806 *
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ Name:            ALTMNU
+  @ Description:     Modifies the CST menu for the start of a new problem.
+  @ Input:      NONE
+  @ Output:     CST      Menu reorganised to start a new problem or view
+  @                      solutions from previous problem.
+  @
+  { { "CALT" ´ '1_ft' çUNIT DUP 'CA' STO "CALT" çTAG ª }       @ Input CA
+    { "SAT" ´ '1_∞C' çUNIT DUP 'SAT' STO "SAT" çTAG ª }        @ Input SAT
+    { "PALT" ´ '1_ft' çUNIT DUP 'PA' STO "PALT" çTAG ª }       @ Input PA
+    { "GNDST" ´ '1_ft' çUNIT DUP 'GNDST' STO "GNDST" çTAG ª }  @ Input GNDST
+    { "TALT" ´ CA SAT PA GNDST TRUALT                          @ Calc. TA
+               DUP 'TA' STO "TALT" çTAG NOVAL 'DA' STO         @ CLEAR DA
+               { CA SAT PA GNDST TA { }                        @ New CST menu
+               { "NEW" ´ ALTMNU ª } 
+               { "GUI" ´ ALTFRM ª } } 
+               MENU ª }
+    { "DALT" ´ SAT PA DENALT                                   @ Calc. DA
+               DUP 'DA' STO "DALT" çTAG NOVAL 'TA' STO         @ CLEAR TA
+               NOVAL 'CA' STO                                  @ CLEAR CA
+               { { } SAT PA { } { } DA                         @ New CST menu
+               { "NEW" ´ ALTMNU ª} { "GUI" ´ ALTFRM ª } }
+               MENU ª }
+    { "GUI" ´ ALTFRM ª }                                       @ Start the GUI
+    { "ANSER" ´ { CA SAT PA GNDST TA DA                        @ Answer CST
+                { "NEW" ´ ALTMNU ª } } MENU ª }                @ menu
+  }
+  MENU
+ª
+'ALTMNU' STO                       @
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ Name:            TRUALT
+  @ Description:     Calculates the true altitude.
+  @ Input:      ca        Calibrated altitude
+  @             sat       Static air temperature (true air temp.) (deg. C)
+  @             pa        Pressure altitude
+  @             gndst     Altitude of the ground station.
+  @ Output:     STACK     True altitude
+  @
+  ç ca sat pa gndst       @ INPUTS
+  ´  
+     sat '1_K' CONVERT    @ Static (true) air temp.
+     'ISAT(pa)' EVAL      @ ISA temp. at pressure altitude.
+     /                    @ Calculate true alt. factor (=SAT/ISAT)
+     ca gndst - *
+     gndst +              @ Calculate true altitude.
+  ª
+ª
+'TRUALT' STO
+@-----------------------------------------------------------------------------
+@-----------------------------------------------------------------------------
+´ @ Name:            DENALT
+  @ Description:     Calculates the density altitude.
+  @ Input:      sat     Static air temperature (true air temp.) (deg. C)
+  @             pa      Pressure altitude
+  @ Output:     STACK   Density altitude
+  @  
+  ç sat pa                   @ INPUTS
+  ´  287.0528_J/(kg*K)       @ R  = Gas constant for the ISA
+     ç R
+     ´  
+        'ISAP(PA)' EVAL      @ ISA pressure at pressure altitude
+        sat '1_K' CONVERT
+        R * / UBASE          @ Calculate actual air density
+        ç ó
+        ´  
+           'ó=ISAó(DA)' 'DA' pa ROOT
+        ª
+     ª
+  ª
+ª
+'DENALT' STO
+@----------------------------------------------------------------------------
+@----------------------------------------------------------------------------
+´ @ Name:            ALTFRM
+  @ Description:     Input form for altitude calculations.
+  @ Input:      CA        Calibrated altitude (global)
+  @             QNH       Altimeter setting (mbar) (global)
+  @             SAT       Static air temperature (true air temp.) (global)
+  @             PA        Pressure altitude (global)
+  @             GNDST     Ground station altitude (global)
+  @ Output:     TA        True altitude (global)
+  @             DA        Density altitude (global)
+  @  
+  WHILE
+       { CA QNH PA SAT GNDST TA DA } EVAL 7 çLIST             @ Initial inputs
+       ç initlst                                          @ Initial input list
+       ´  
+          "ALTITUDE"                                           @ Input/output
+          {                                                    @ form for the
+          { "CALT:" "CALIBRATED ALTITUDE (FOR TALT)" 13 }      @ calculation.
+          { "QNH:" "ALTIMETER SETTING" 13 }
+          { "PALT:" "PRESSURE ALTITUDE" 13 }
+          { "SAT:" "TRUE AIR TEMPERATURE" 13 }
+          { "GNDST:" "GROUND STATION ELEV. (FOR TALT)" 13 }
+          { }
+          { "TALT:" "TRUE ALTITUDE (OUTPUT)" 13 }
+          { "DALT:" "DENSITY ALTITUDE (OUTPUT)" 13 }
+          }
+          { 2 0 }
+          { NOVAL NOVAL NOVAL NOVAL 0_ft NOVAL NOVAL }      @ Reset values
+          initlst                                     @ Initial input list
+          INFORM
+          DUP
+          IF 1 ==
+             THEN SWAP { CA QNH PA SAT GNDST TA DA } STO
+             ELSE ALTMNU
+          END
+       ª
+  REPEAT  
+      CASE
+          CA NOVAL ã PA NOVAL ã AND               @ Check for PA and CA
+             THEN                                 @ If they both exist then
+                 PA CA - 
+                 ISAP                             @ Calculate QNH
+                 'QNH' STO                       
+             END
+          CA NOVAL ã QNH NOVAL ã AND              @ Check for CA and QNH
+             THEN                                 @ If they both exist then
+                 'QNH=ISAP(DPA)' 'DPA' 0_ft 
+                 ROOT DROP
+                 CA DPA +                         @ Calculate PA
+                 'PA' STO
+             END
+          PA NOVAL ã QNH NOVAL ã AND              @ Check for PA and QNH
+             THEN                                 @ If they both exist then
+                  'QNH=ISAP(DPA)' 'DPA' 0_ft 
+                  ROOT DROP
+                  PA DPA -                        @ Calculate CA
+                  'CA' STO
+             END
+      END
+      IF SAT NOVAL ã PA NOVAL ã AND               @ PA and SAT required minimum
+         THEN                                     @ to calc. TA and/or DA
+             IF CA NOVAL ã                        @ Check if CA is available
+                THEN CA SAT PA GNDST TRUALT       @ Calc. TA
+                     'TA' STO
+                ELSE NOVAL 'TA' STO               @ ELSE reset TA with NOVAL
+                END
+             SAT PA DENALT                        @ Calc. DA
+             'DA'STO   
+         ELSE
+             NOVAL DUP 'TA' STO 'DA' STO          @ ELSE reset TA and DA
+      END
+  END
+ª
+'ALTFRM' STO
+@-----------------------------------------------------------------------------
+@---------------------------------------------------------------------------
+@ LIBRARY CREATION:
+@
+807 '$ROMID' STO
+
+"ALT v1.12  : Altitude" '$TITLE' STO
+
+@ For HP48gx library.  Set '$CONFIG' = 1. for HP50g.
+´ 807 ATTACH ª '$CONFIG' STO
+
+@ For both HP48gx and HP50g.
+{ ALTMNU ALTFRM } '$VISIBLE' STO
+
+@ For HP48gx library ONLY.  Delete 'CST', '$CONFIG' and global vars for the HP50g.
+{ CA QNH PA SAT GNDST TA DA CST TRUALT DENALT $CONFIG } '$HIDDEN' STO
+
+@ For HP48gx library ONLY.  Not required for the HP50g (delete '$VARS')
+{ CA QNH PA SAT GNDST TA DA CST } '$VARS' STO
+@---------------------------------------------------------------------------
